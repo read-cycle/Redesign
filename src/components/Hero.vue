@@ -24,7 +24,7 @@ function getManropeOGlyphMetrics(
 ) {
   const scaleWidth = (basePx: number) => (basePx / 1920) * window.innerWidth;
   const unitsPerEm = 2000;
-  const glyph = manropeGlyphData[char];
+  const glyph = manropeGlyphData[char as keyof typeof manropeGlyphData];
 
   const width = (glyph.widthUnits / unitsPerEm) * fontSizePx;
   const height = (glyph.heightUnits / unitsPerEm) * fontSizePx;
@@ -136,7 +136,7 @@ onMounted(async () => {
           <span class="hero-highlighted">Shared Books</span>
         </h1>
         <div class="cta-btn-container">
-            <button class="cta-btn"><svg width="20" height="20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2b2b2b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload-icon lucide-upload"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg> Start Sharing <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2b2b2b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right-icon lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg></button>
+            <button class="cta-btn">Start Sharing</button>
         </div>
         <div class="subtext-container">
             <h3 class="hero-subtext">for <span class="subtext-highlighted">students</span>. by <span class="subtext-highlighted">students</span>.</h3>
@@ -155,11 +155,10 @@ onMounted(async () => {
     grid-template-columns: 1fr;
     grid-template-rows: repeat(20, 1fr);
     text-align: center;    
-    gap: 2rem;
     background-color: $color-background;
 
     .hero-header {
-        grid-row: 5/16;
+        grid-row: 5 / span 10;
         font-family: 'Manrope';
         text-align: center;
         line-height: 0.9;
@@ -174,7 +173,7 @@ onMounted(async () => {
         }
         .hero-highlighted {
             position: relative;
-            font-size: px-to-vw(240);
+            font-size: clamp(2rem, 12vw, 30vh);            
             background: linear-gradient(to right, $color-primary, $color-accent);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -185,7 +184,7 @@ onMounted(async () => {
         display: flex;
         align-items: center;
         justify-content: center;
-        grid-row: 16/17;
+        grid-row: 15/16;
         .cta-btn {
             font-family: 'Nunito';
             svg {

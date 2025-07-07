@@ -159,5 +159,6 @@
     display: flex;
     column-gap: 10px;
     align-items: center;
+    font-size: px-to-vw(16);
 }
 </style>
