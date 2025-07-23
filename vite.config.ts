@@ -4,6 +4,7 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [vue()],
+  base: '/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')
@@ -14,9 +15,8 @@ export default defineConfig({
       scss: {
         additionalData: (content, filename) => {
           if (filename.replace(/\\/g, '/').endsWith('/main.scss')) {
-            return content; // Don't inject into main.scss
+            return content;
           }
-        
           return `@use "@/styles/main.scss" as *;\n${content}`;
         }
       }
