@@ -104,9 +104,6 @@ onMounted(() => {
     </div>
 </template>
 <style lang="scss" scoped>
-@function px-to-vw($px, $viewport: 1920) {
-  @return calc(#{$px} / #{$viewport} * 100vw);
-}
 .hiw-container {
     width: 100%;
     height: 100dvh;

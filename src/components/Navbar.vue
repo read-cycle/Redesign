@@ -1,7 +1,7 @@
 <template>
 <div class="navbar">
     <ul class="navbar-ul">
-        <li class="navbar-item header-item"><a href="" class="navbar-link"></a>ReadCycle</li>
+        <li class="navbar-item header-item"><a href="" class="navbar-link"><div class="logo-icon"><img src="../assets/icons/rc_logo.svg" alt="Logo" /></div>ReadCycle</a></li>
         <li class="navbar-item"><a href="#" class="navbar-link">Home</a></li>
         <li class="navbar-item"><a href="#about-us" class="navbar-link">About Us</a></li>
         <li class="navbar-item"><a href="#how-it-works" class="navbar-link">How it Works</a></li>
@@ -54,6 +54,17 @@
                 text-decoration: none;
                 color: $color-text;
                 font-family: 'Nunito';
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                column-gap: 10px;
+                .logo-icon {
+                    aspect-ratio: 1/1;
+                    padding-top: 4.5px;
+                    img {
+                        width: 30px;
+                    }
+                }
             }
         }
     }

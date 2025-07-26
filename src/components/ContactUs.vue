@@ -45,9 +45,6 @@
 </div>
 </template>
 <style lang="scss" scoped>
-@function px-to-vw($px, $viewport: 1920) {
-  @return calc(#{$px} / #{$viewport} * 100vw);
-}
 .contact-us-container {
     position: relative;
     width: 100%;
