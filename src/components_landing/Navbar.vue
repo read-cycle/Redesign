@@ -7,7 +7,7 @@
         <li class="navbar-item"><a href="#how-it-works" class="navbar-link">How it Works</a></li>
         <li class="navbar-item"><a href="#contact-us" class="navbar-link">Contact Us</a></li>
         <li class="navbar-item login-item"><a href="" class="navbar-link"></a>
-            <button class="login-btn">Login</button>
+            <router-link to="/login" class="login-btn">Login</router-link>
         </li>
     </ul>
 </div>
@@ -39,6 +39,9 @@
                 border: 2px solid $color-background;
                 border-radius: 10px;
                 transition: box-shadow 0.4s ease;
+                text-decoration: none;
+                color: $color-text;
+                font-family: 'Nunito';
                 &:hover {
                     box-shadow: 0 0 0 2px $color-primary;
                 }

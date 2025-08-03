@@ -1,10 +1,15 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import LandingPage from './components/LandingPage.vue'
+import LandingPage from './components_landing/LandingPage.vue'
 import LoginPage from './components_login/LoginPage.vue'
-
+import DashboardPage from './components_dashboard/DashboardPage.vue'
+import BrowserPage from './components_browser/BrowserPage.vue'
+import UploadPage from './components_upload/UploadPage.vue'
 const routes = [
   { path: '/', component: LandingPage },
   { path: '/login', component: LoginPage },
+  { path: '/dashboard', component: DashboardPage},
+  { path: '/browser', component: BrowserPage },
+  { path: '/upload', component: UploadPage },
 ]
 
 const router = createRouter({

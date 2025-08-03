@@ -42,7 +42,7 @@ const activeItem = computed(() => {
               
               <div class="login-header-container">
                 <h1 class="login-header">Welcome Back</h1>
-                <p class="login-para">Login using the following alternatives or via email+password.</p>
+                <p class="login-para">Login with your email or use one of the following:</p>
               </div>
 
               <div class="alternatives-container">
