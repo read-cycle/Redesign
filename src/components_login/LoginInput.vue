@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { ref, defineEmits } from 'vue';
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: string): void
+}>()
 
 defineProps<{
+  modelValue: String,
   fieldName: string,
   placeholder?: string,
   fieldIcon?: string,
@@ -9,15 +14,14 @@ defineProps<{
 }>()
 
 const passwordHidden = ref(true);
+const inputRef = ref<HTMLInputElement | null>(null);
 
-onMounted(() => {
-    const deleteBtn = document.querySelector(".optional-deleter") as HTMLElement;
-    const inputBox = document.querySelector(".input-box") as HTMLInputElement;
-
-    deleteBtn.addEventListener("click", () => {
-        inputBox.value = "";
-    })
-})
+function clearInput() {
+  if (inputRef.value) {
+    inputRef.value.value = ""
+    emit('update:modelValue', "")
+  }
+}
 </script>
 <template>
     <form>
@@ -32,8 +36,10 @@ onMounted(() => {
   class="input-box"
   :placeholder="placeholder"
   :style="{ marginRight: isPassword ? '25%' : '15%' }"
+  :value="modelValue"
+  @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
 />        <div class="optional-buttons">
-            <div class="optional-deleter">
+            <div class="optional-deleter" ref="optional-deleter" @click="clearInput">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
             </div>
             <div class="optional-hider" @click="passwordHidden = !passwordHidden" v-if="isPassword">

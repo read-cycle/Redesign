@@ -17,5 +17,8 @@ defineProps({
     border: none;
     background-color: transparent;
     cursor: pointer;
+    ::v-deep svg {
+        width: 35%;
+    }
 }
 </style>

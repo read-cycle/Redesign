@@ -10,14 +10,17 @@
   },
   "dependencies": {
     "@vueform/multiselect": "^2.6.11",
+    "firebase": "^12.0.0",
     "fontkit": "^2.0.4",
+    "isbn-utils": "^1.1.0",
     "vue": "^3.5.17",
     "vue-cal": "^4.10.2",
-    "vue-multiselect": "^3.3.1",
+    "vue-multiselect": "^3.0.0-beta.3",
     "vue-router": "^4.5.1",
     "vue3-datepicker": "^0.4.0"
   },
   "devDependencies": {
+    "@types/isbn-utils": "^1.1.6",
     "@types/node": "^24.0.10",
     "@vitejs/plugin-vue": "^6.0.0",
     "@vue/tsconfig": "^0.7.0",

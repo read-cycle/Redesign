@@ -7,13 +7,14 @@ export default {
     const { handler, exclude = [] } = binding.value;
 
     el.__clickOutsideHandler__ = (e: MouseEvent) => {
-      const isExcluded = exclude.some((refEl: HTMLElement) =>
-        refEl?.contains(e.target as Node)
-      );
+      const path = e.composedPath() as Node[];
+      
+      if (path.includes(el)) return;
 
-      if (!el.contains(e.target as Node) && !isExcluded) {
-        handler(e);
-      }
+      const isExcluded = exclude.some((refEl: HTMLElement) => refEl && path.includes(refEl));
+      if (isExcluded) return;
+
+      handler(e);
     };
 
     document.addEventListener("click", el.__clickOutsideHandler__);

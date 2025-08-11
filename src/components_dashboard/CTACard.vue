@@ -25,9 +25,13 @@ defineProps({
     position: relative;
     height: 100%;
     aspect-ratio: 1 / 1;
-    border: 1px solid $color-accent;
-    border-radius: 20px;
     cursor: pointer;
+    border: 2px solid $color-background;
+    transition: box-shadow 0.4s ease;
+    &:hover {
+        box-shadow: 0 0 0 4px $color-primary;
+    }
+    border-radius: 20px;
     .icon-container {
       color: $color-accent;
     }
