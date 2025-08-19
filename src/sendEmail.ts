@@ -3,7 +3,7 @@ export async function sendEmail(email: string, subject: string, body: string) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'api-key': import.meta.env.VITE_API_KEY
+      'api-key': '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'
     },
     body: JSON.stringify({
       sender: { email: 'read.cycle.inv@gmail.com', name: 'ReadCycle' },
