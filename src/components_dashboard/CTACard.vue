@@ -1,13 +1,35 @@
 <script setup lang="ts">
+import { type Ref, ref, onMounted } from 'vue';
+
 defineProps({
     title: String,
     icon: String,
     scenario: String
 })
+const ctaCard: Ref<HTMLElement | null> = ref(null)
+
+onMounted(() => {
+  if(!ctaCard.value) return
+  ctaCard.value.style.width = '100%';
+  ctaCard.value.style.height = '100%';
+
+  const { width, height } = ctaCard.value.getBoundingClientRect();
+  
+  const shouldSwap = window.innerWidth < 850;
+  const condition = shouldSwap ? (height > width) : (width > height);
+
+  if (condition) {
+    ctaCard.value.style.height = 'auto';
+    ctaCard.value.style.width = '100%';
+  } else {
+    ctaCard.value.style.width = 'auto';
+    ctaCard.value.style.height = '100%';
+  }
+})
 </script>
 <template>
     <div class="cta-card-container">
-      <div class="cta-card">
+      <div class="cta-card" ref="ctaCard">
         <div class="background-scenario" :style="{ backgroundImage: `url(${scenario})` }">
         </div>
         <div class="card-text">
@@ -20,10 +42,10 @@ defineProps({
 <style lang="scss" scoped>
 .cta-card-container {
   @extend %centered;
-  height: 100%;
   .cta-card {
-    position: relative;
+    width: 100%;
     height: 100%;
+    position: relative;
     aspect-ratio: 1 / 1;
     cursor: pointer;
     border: 2px solid $color-background;
@@ -43,7 +65,7 @@ defineProps({
         z-index: 4;
         text-align: center;
         font-family: 'Manrope';
-        font-size: 15px;
+        font-size: px-to-vw(15);
         border-radius: inherit;
         background-color: rgba(red($color-secondary), green($color-secondary), blue($color-secondary), 0.8);
     }

@@ -6,16 +6,29 @@ import "vue-multiselect/dist/vue-multiselect.esm.css"
 import Multiselect from 'vue-multiselect'
 import { computed, isRef, nextTick, onMounted, ref, watch, type ComputedRef, type Ref } from 'vue';
 import Datepicker from 'vue3-datepicker'
-import vClickOutside from '../directives/v-click-outside'
-import { addDoc, collection, deleteDoc, DocumentReference, getDoc, getDocs, orderBy, query } from "firebase/firestore";
-import { db } from '../firebase-init';
-import { type UploadDoc } from '../interfaces';
+import { addDoc, collection, deleteDoc, doc, DocumentReference, getDoc, getDocs, orderBy, query, setDoc } from "firebase/firestore";
+import { auth, db } from '../firebase-init';
+import { type BuyerRequestedDoc, type UploadDoc } from '../interfaces';
 import bookSVG from '../assets/icons/book.svg'
-import priceSVG from '../assets/icons/pricing.svg'
-import locationSVG from '../assets/icons/location.svg'
 import infoSVG from '../assets/icons/info.svg'
-import photoSVG from '../assets/icons/photo.svg'
+import checkSVG from '../assets/icons/check.svg'
 import AutocompletePhoton from '../components_upload/AutocompletePhoton.vue';
+import { onAuthStateChanged } from 'firebase/auth';
+import router from '../router';
+import success from '../assets/icons/check-big.svg?raw';
+import failure from '../assets/icons/circle-x.svg?raw';
+import { sendEmail } from '../sendEmail';
+import Navbar from '../components/Navbar.vue';
+
+let userID: string | null = null;
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    userID = user.uid;
+  } else {
+    router.push('/login')
+  }
+})
 
 const fromDate = ref<Date | undefined>(undefined)
 const toDate = ref<Date | undefined>(undefined)
@@ -143,7 +156,7 @@ function nextImage() {
 
 const activeSlide = ref(1);
 
-const slideIcons = [bookSVG, priceSVG, locationSVG, infoSVG, photoSVG]
+const slideIcons = [bookSVG, infoSVG, checkSVG]
 
 const progressThresholds: number[] = [100, 100]
 const progresses: Ref<number[]> = ref([100, 0])
@@ -224,8 +237,10 @@ async function nextSlide() {
             return;
           }
         
-          const docData = docSnap.data();
+          const docData = docSnap.data() as UploadDoc;
         
+          sendEmail(docData.uploaderEmail, 'Your book has been requested!', 'Yay!!')
+
           await addDoc(collection(db, "buyerRequested"), {
             ...docData,
             buyerName: buyerName.value,
@@ -233,6 +248,8 @@ async function nextSlide() {
             buyerDeliveryPreference: buyerDeliveryPreference.value,
             shareBuyerLocation: shareBuyerLocation.value,
             buyerLocation: buyerLocation.value,
+            buyerQuantity: buyerQuantity.value,
+            buyerID: userID
           });
         
           await deleteDoc(currentDocRef.value);
@@ -513,12 +530,60 @@ function deepUnref(obj: any): any {
   }
   return obj
 }
+
+const toggleConfirmationModal = ref(false);
+
+const selectedNotif: Ref<[DocumentReference, BuyerRequestedDoc] | null> = ref(null);
+
+function openModal(item: [DocumentReference, BuyerRequestedDoc]) {
+  selectedNotif.value = item;
+  toggleConfirmationModal.value = true;
+}
+
+const possibleStates = [
+  ['Accepted', success],
+  ['Denied', failure]
+]
+
+const activeState = ref<string[] | null>(null);
+
+async function acceptRequest() {
+  if (!selectedNotif.value) return;
+
+  const [docRef, data] = selectedNotif.value;
+
+  try {
+    const matchedRef = doc(db, "matched", docRef.id);
+    await setDoc(matchedRef, data);
+
+    await deleteDoc(docRef);
+
+    console.log(`Moved ${docRef.id} from buyerRequested → matched`);
+  } catch (err) {
+    console.error("Error accepting request:", err);
+  }
+}
+
+async function denyRequest() {
+  if (!selectedNotif.value) return;
+
+  const [docRef] = selectedNotif.value;
+
+  try {
+    await deleteDoc(docRef);
+
+    console.log(`Deleted ${docRef.id} from buyerRequested`);
+  } catch (err) {
+    console.error("Error denying request:", err);
+  }
+}
 </script>
 <template>
-    <Sidebar></Sidebar>
+    <Sidebar class="sidebar"></Sidebar>
+    <Navbar class="navbar"></Navbar>
     <div class = "main-grid">
         <div class = "metabar-container">
-          <MetaBar :title="'Browser'"></MetaBar>
+          <MetaBar :title="'Browser'" @notif-click="openModal" ref="metaBar"></MetaBar>
         </div>
         <div class="filters-bar">
           <div class="input-box">
@@ -542,7 +607,7 @@ function deepUnref(obj: any): any {
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-funnel-icon lucide-funnel"><path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"/></svg>
                 Filter
               </button>
-              <div v-if="showFilters" class="filter-dropdown" v-click-outside="{  handler: () => showFilters = false,  exclude: [filterButtonRef]}">
+              <div v-if="showFilters" class="filter-dropdown">
                 <div class="filter-block title-block">
                   <label>Filters</label>
                 </div>
@@ -617,7 +682,7 @@ function deepUnref(obj: any): any {
                   </div>
                 </div>
               </div>
-              <div v-if="showSorts" class="filter-dropdown" v-click-outside="{  handler: () => showSorts = false,  exclude: [sortButtonRef]}">
+              <div v-if="showSorts" class="filter-dropdown">
                 <div class="filter-block title-block">
                   <label>Sort Options</label>
                 </div>
@@ -666,7 +731,8 @@ function deepUnref(obj: any): any {
         </div>
     </div>
     <div class="modal-book-expanded-container" v-if="toggleModal">
-      <div class="modal-book-expanded-content" v-click-outside="{ handler: () => toggleModal = false, exclude: cards }">
+      <div class="modal-book-expanded-content">
+        <div class="close-btn" @click="toggleModal = false"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
         <div class="progress-container">
           <div class="slide-number-container">
               <p class="slide-number" :key="activeSlide">
@@ -778,8 +844,61 @@ function deepUnref(obj: any): any {
         </transition>
       </div>
     </div>
+    <div class="modal-confirmation-container" v-if="toggleConfirmationModal">
+      <div class="modal-confirmation-content">
+        <div class="close-btn" @click="toggleConfirmationModal = false"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
+        <div class="text-half">
+          <h1>Your book has been requested!</h1>
+          <div class="book-metadata">
+            <p><b>Book Requested:</b> {{ selectedNotif?.[1]?.title?.name }}</p>
+            <p><b>Books Grade:</b> {{ selectedNotif?.[1]?.grade?.name }}</p>
+          </div>
+          <div class="requester-data">
+            <p><b>Requester Name:</b> {{ selectedNotif?.[1]?.buyerName }}</p>
+            <p><b>Requester Location:</b> {{ selectedNotif?.[1].shareBuyerLocation ? selectedNotif?.[1].buyerLocation : "Not Shared" }}</p>
+            <p><b>Requester Contact Preference:</b> {{ selectedNotif?.[1].buyerContactPreference.map(x => x.name).join(', ') }}</p>
+            <p><b>Requester Delivery Preference:</b> {{ selectedNotif?.[1].buyerDeliveryPreference.map(x => x.name).join(', ') }}</p>
+            <p><b>Quantity Requested:</b> {{ selectedNotif?.[1].buyerQuantity }}</p>
+          </div>
+          <div class="button-container">
+            <button class="accept-btn" @click="activeState = possibleStates[0]; acceptRequest()" :disabled="activeState?.[0] != null">Accept</button>
+            <button class="deny-btn" @click="activeState = possibleStates[1]; denyRequest()" :disabled="activeState?.[0] != null">Deny</button>
+          </div>
+        </div>
+        <div class="image-half">
+          <transition name="fade-in">
+            <div class="state-container" v-if="activeState !== null">
+              <div class="icon-container" :style="{ color: activeState?.[0] == 'Accepted' ? '#26e5bc' : '#ff9b9b' }" v-html="activeState?.[1]" v-if="activeState !== null"></div>
+            </div>
+          </transition>
+        </div>
+      </div>
+    </div>
+    <!--TODO: MAKE BROWSER PAGE RESPONSIVE-->
 </template>
 <style lang="scss" scoped>
+@media screen and (max-width: 850px) {
+  .images-half, .image-half {
+    flex: 0;
+  }
+  .sidebar {
+    display: none;
+  }
+  .navbar {
+    display: flex;
+  }
+}
+@media screen and (min-width: 850px) {
+  .images-half, .image-half {
+    flex: 1;
+  }
+  .sidebar {
+    display: flex;
+  }
+  .navbar {
+    display: none;
+  }
+}
 .fade-slide-enter-active,
 .fade-slide-leave-active {
   transition: all 0.4s ease;
@@ -843,6 +962,10 @@ function deepUnref(obj: any): any {
   grid-template-rows: repeat(20, 1fr);
   position: relative;
   padding-left: 5vw;
+  .metabar-container {
+    grid-row: 1/3;
+    grid-column: 4 / 18;
+  }
   .grid-container {
     grid-row: 5/20;
     grid-column: 4/18;
@@ -852,10 +975,6 @@ function deepUnref(obj: any): any {
     gap: 1rem;
     height: 200%;
   }
-}
-.metabar-container {
-  grid-row: 1/3;
-  grid-column: 4 / 18;
 }
 .filters-bar {
   grid-row: 3/5;
@@ -868,7 +987,7 @@ function deepUnref(obj: any): any {
     row-gap: 5px;
     p {
       font-family: 'Nunito';
-      font-size: 12px;
+      font-size: px-to-vw(12);
     }
   }
   .filters-box {
@@ -879,7 +998,7 @@ function deepUnref(obj: any): any {
     row-gap: 5px;
     p {
       font-family: 'Nunito';
-      font-size: 12px;
+      font-size: px-to-vw(12);
     }
   }
 }
@@ -915,7 +1034,7 @@ function deepUnref(obj: any): any {
   position: absolute;
   top: 100%;
   right: 0;
-  width: 12vw;
+  width: clamp(6vw, 12vw, 50vw);
   background-color: $color-background;
   border-radius: 10px;
   border: 1px solid rgba(211, 211, 211, 0.5);
@@ -932,17 +1051,17 @@ function deepUnref(obj: any): any {
       justify-content: space-between;
       font-family: 'Nunito';
       label {
-        font-size: 13px;
+        font-size: px-to-vw(13);
       }
       .reset-btn {
-        font-size: 10px;
+        font-size: px-to-vw(10);
         text-decoration: underline;
         color: $color-accent;
       }
     }
     .submit-track {
       button {
-        font-size: 12px;
+        font-size: px-to-vw(12);
         cursor: pointer;
       }
       .delete-btn {
@@ -976,7 +1095,7 @@ function deepUnref(obj: any): any {
   .title-block {
     label {
       font-family: 'Manrope';
-      font-size: 16px;
+      font-size: px-to-vw(16);
     }
   }
 }
@@ -997,7 +1116,7 @@ function deepUnref(obj: any): any {
 ::v-deep .multiselect__tag {
   background-color: $color-primary;
   font-family: 'Nunito';
-  font-size: 12px;
+  font-size: px-to-vw(12);
 }
 ::v-deep .multiselect__option--highlight {
   background-color: $color-primary;
@@ -1309,5 +1428,128 @@ input[type="checkbox"]:checked::after {
 }
 .multiselect {
   font-family: 'Nunito';
+}
+.modal-confirmation-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  @extend %filler;
+  @extend %centered;
+  z-index: 9999;
+  .modal-confirmation-content {
+    position: relative;
+    width: 65%;
+    height: 70%;
+    background-color: $color-background;
+    border-radius: 20px;
+    display: flex;
+  }
+  .close-btn {
+    position: absolute;
+    top: px-to-vw(20);
+    right: px-to-vw(20);
+    cursor: pointer;
+    z-index: 999;
+  }
+  .text-half {
+    flex: 1;
+    border-top-left-radius: 20px;
+    border-bottom-left-radius: 20px;
+    padding: 1.5vw;
+    display: flex;
+    flex-direction: column;
+    h1 {
+      font-family: 'Manrope';
+      font-size: px-to-vw(40);
+    }
+    .book-metadata {
+      p {
+        font-family: 'Nunito';
+        font-size: px-to-vw(17);
+      }
+      margin-top: 2%;
+      margin-bottom: 5%;
+    }
+    .requester-data {
+      p {
+        font-family: 'Nunito';
+        font-size: px-to-vw(15);
+      }
+    }
+    .button-container {
+      margin-top: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 10%;
+      .accept-btn {
+        height: 75%;
+        aspect-ratio: 3/1;
+        font-family: 'Nunito';
+        border-radius: 14px;
+        background: linear-gradient(to right, $color-secondary, $color-secondary-lightened);
+        font-size: px-to-vw(15);
+        cursor: pointer;
+        border: 4px solid $color-background;
+        transition: box-shadow 0.4s ease;
+        &:hover {
+            box-shadow: 0 0 0 4px $color-primary;
+        }
+      }    
+      .deny-btn {
+        height: 75%;
+        aspect-ratio: 3/1;
+        font-family: 'Nunito';
+        border-radius: 14px;
+        background: #ff9b9b;
+        font-size: px-to-vw(15);
+        cursor: pointer;
+        border: 4px solid $color-background;
+        transition: box-shadow 0.4s ease;
+        &:hover {
+            box-shadow: 0 0 0 4px #ff9b9b;
+        }
+      }    
+    }
+  }
+  .image-half {
+    flex: 1;
+    background-color: $color-accent;
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    .state-container {
+      @extend %centered;
+      flex-direction: column;
+      height: 50%;
+      aspect-ratio: 1/1;
+      .icon-container {
+        @extend %centered;
+        height: 100%;
+        aspect-ratio: 1/1;
+        svg {
+          width: 75%;
+          aspect-ratio: 1/1;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 2;
+        }
+        svg path:nth-child(1) {
+          stroke-dasharray: 4.1886;
+          stroke-dashoffset: 4.1886;
+          animation: draw-svg 0.5s ease forwards;
+        }
+    
+        svg path:nth-child(2) {
+          stroke-dasharray: 40.9641;
+          stroke-dashoffset: 40.9641;
+          animation: draw-svg 1s ease forwards 0.5s;
+        }
+      }
+    }
+  }
 }
 </style>

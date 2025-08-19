@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Multiselect from 'vue-multiselect'
+import Navbar from '../components/Navbar.vue';
 import "vue-multiselect/dist/vue-multiselect.esm.css"
 import {  onMounted, ref, watch, type Ref, computed, isRef, type ComputedRef  } from 'vue';
 import bookSVG from '../assets/icons/book.svg'
@@ -12,10 +13,27 @@ import Sidebar from '../components/Sidebar.vue';
 import MetaBar from '../components/MetaBar.vue';
 import ISBN from 'isbn-utils';
 import AutocompletePhoton from './AutocompletePhoton.vue';
-import { db, storage } from '../firebase-init'
-import { collection, addDoc, updateDoc, doc, serverTimestamp } from "firebase/firestore"; 
+import { auth, db, storage } from '../firebase-init'
+import { collection, addDoc, updateDoc, doc, serverTimestamp, deleteDoc, DocumentReference, setDoc, where, query, getDocs } from "firebase/firestore"; 
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useRoute, useRouter } from 'vue-router'
+import { onAuthStateChanged } from 'firebase/auth';
+import success from '../assets/icons/check-big.svg?raw';
+import failure from '../assets/icons/circle-x.svg?raw';
+import type { BuyerRequestedDoc, WatchlistDoc } from '../interfaces';
+import { sendEmail } from '../sendEmail';
+
+let userID: string | null = null;
+let userEmail: string | null = null;
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    userID = user.uid;
+    userEmail = user.email;
+  } else {
+    router.push('/login')
+  }
+})
 
 const activeSlide = ref(1);
 
@@ -757,7 +775,9 @@ async function submitData() {
         quantity: quantity.value || 0,
         uploaderName: uploaderName.value || "",
         contactPreference: contactPreference.value || "",
-        extraInfo: extraInfo.value || ""
+        extraInfo: extraInfo.value || "",
+        uploaderID: userID,
+        uploaderEmail: userEmail
       });
 
       const listingImageUrls: string[] = [];
@@ -783,6 +803,24 @@ async function submitData() {
         listingImage: listingImageUrls,
         extraImages: extraImagesUrls,
         timestamp: serverTimestamp()
+      });
+
+      const watchlistQuery = query(
+        collection(db, 'watchlist'),
+        where('isbn.code', '==', selectedISBN.value.code)
+      )
+
+      let watchlistData: [DocumentReference, WatchlistDoc][] = []
+
+      getDocs(watchlistQuery).then((result) => {
+        watchlistData = result.docs.map((doc) => {
+          const data = doc.data() as WatchlistDoc;
+          return [doc.ref, { id: doc.id, ...data }] as unknown as [DocumentReference, WatchlistDoc];
+        });
+
+        watchlistData.forEach((item) => {
+          sendEmail(item[1].buyerEmail, 'ReadCycle Confirmation Email', '<h1>Hello</h1>')
+        })
       });
 
       window.alert("Submit Successful.");
@@ -919,12 +957,59 @@ function deepUnref(obj: any): any {
   }
   return obj
 }
+const toggleConfirmationModal = ref(false);
+
+const selectedNotif: Ref<[DocumentReference, BuyerRequestedDoc] | null> = ref(null);
+
+function openModal(item: [DocumentReference, BuyerRequestedDoc]) {
+  selectedNotif.value = item;
+  toggleConfirmationModal.value = true;
+}
+
+const possibleStates = [
+  ['Accepted', success],
+  ['Denied', failure]
+]
+
+const activeState = ref<string[] | null>(null);
+
+async function acceptRequest() {
+  if (!selectedNotif.value) return;
+
+  const [docRef, data] = selectedNotif.value;
+
+  try {
+    const matchedRef = doc(db, "matched", docRef.id);
+    await setDoc(matchedRef, data);
+
+    await deleteDoc(docRef);
+
+    console.log(`Moved ${docRef.id} from buyerRequested → matched`);
+  } catch (err) {
+    console.error("Error accepting request:", err);
+  }
+}
+
+async function denyRequest() {
+  if (!selectedNotif.value) return;
+
+  const [docRef] = selectedNotif.value;
+
+  try {
+    await deleteDoc(docRef);
+
+    console.log(`Deleted ${docRef.id} from buyerRequested`);
+  } catch (err) {
+    console.error("Error denying request:", err);
+  }
+}
 </script>
 <template>
-<Sidebar></Sidebar>
+<Sidebar class="sidebar"></Sidebar>
+<Navbar class="navbar"></Navbar>
 <div class="grid">
   <div class="metabar-container">
-    <MetaBar :title="'Upload'"></MetaBar>
+    <MetaBar :title="'Upload'" @notif-click="openModal" ref="metaBar"></MetaBar>
   </div>
 </div>
 <div class="upload-container">
@@ -932,7 +1017,7 @@ function deepUnref(obj: any): any {
     <div class="progress-container" v-if="activeSlide !== 6" >
         <div class="slide-number-container">
             <p class="slide-number" :key="activeSlide">
-              <img :src="slideIcons[activeSlide - 1]" width="24" height="24" />
+              <img :src="slideIcons[activeSlide - 1]" />
             </p>
         </div>
         <div class="bar-container">
@@ -973,7 +1058,7 @@ function deepUnref(obj: any): any {
               </div>
             </div>
             <div class="form-section button-section" v-if="activeSlide != 6">
-              <button class="next-btn" @click = "nextSlide()">Next Section <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevrons-right-icon lucide-chevrons-right"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></svg></button>
+              <button class="next-btn" @click = "nextSlide()">Next Section <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevrons-right-icon lucide-chevrons-right"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></svg></button>
             </div>
             <div class="form-section button-section" v-if="activeSlide == 6">
               <button class="next-btn" @click = "submitData()">Submit</button>
@@ -992,6 +1077,36 @@ function deepUnref(obj: any): any {
       <div class="slide-number-selection" v-for="i in 6" :key="i" @click="activeSlide = i" :class="{active: activeSlide==i}">{{ i }}</div>
       <div class="nav-right" @click="activeSlide < 6 && activeSlide++" :class="{disabled: activeSlide >= 6}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right-icon lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg></div>
     </div>
+  </div>
+    <div class="modal-confirmation-container" v-if="toggleConfirmationModal">
+      <div class="modal-confirmation-content">
+        <div class="close-btn" @click="toggleConfirmationModal = false"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
+        <div class="text-half">
+          <h1>Your book has been requested!</h1>
+          <div class="book-metadata">
+            <p><b>Book Requested:</b> {{ selectedNotif?.[1]?.title?.name }}</p>
+            <p><b>Books Grade:</b> {{ selectedNotif?.[1]?.grade?.name }}</p>
+          </div>
+          <div class="requester-data">
+            <p><b>Requester Name:</b> {{ selectedNotif?.[1]?.buyerName }}</p>
+            <p><b>Requester Location:</b> {{ selectedNotif?.[1].shareBuyerLocation ? selectedNotif?.[1].buyerLocation : "Not Shared" }}</p>
+            <p><b>Requester Contact Preference:</b> {{ selectedNotif?.[1].buyerContactPreference.map(x => x.name).join(', ') }}</p>
+            <p><b>Requester Delivery Preference:</b> {{ selectedNotif?.[1].buyerDeliveryPreference.map(x => x.name).join(', ') }}</p>
+            <p><b>Quantity Requested:</b> {{ selectedNotif?.[1].buyerQuantity }}</p>
+          </div>
+          <div class="button-container">
+            <button class="accept-btn" @click="activeState = possibleStates[0]; acceptRequest()" :disabled="activeState?.[0] != null">Accept</button>
+            <button class="deny-btn" @click="activeState = possibleStates[1]; denyRequest()" :disabled="activeState?.[0] != null">Deny</button>
+          </div>
+        </div>
+        <div class="image-half">
+          <transition name="fade-in">
+            <div class="state-container" v-if="activeState !== null">
+              <div class="icon-container" :style="{ color: activeState?.[0] == 'Accepted' ? '#26e5bc' : '#ff9b9b' }" v-html="activeState?.[1]" v-if="activeState !== null"></div>
+            </div>
+          </transition>
+        </div>
+      </div>
   </div>
 </template>
 <style lang="scss" scoped>
@@ -1045,11 +1160,11 @@ function deepUnref(obj: any): any {
         position: absolute;
         top: 0;
         left: 0;
-        height: 10%;
+        height: 6vh;
         width: 100%;
         display: flex;
         align-items: center;
-        padding: 0.5rem;
+        padding: 0.5vw;
         z-index: 999;
         .slide-number-container {
             height: 100%;
@@ -1071,6 +1186,7 @@ function deepUnref(obj: any): any {
                 justify-content: center;
                 img {
                     width: 75%;
+                    @extend %centered;
                 }
             }
         }
@@ -1107,15 +1223,18 @@ function deepUnref(obj: any): any {
           align-items: center;
           justify-content: center;
           .text-container {
-            width: 50%;
-            height: 100%;
-            padding: 1rem;
-            padding-top: 4.5%;
+            @extend %filler;
+            flex: 1;
+            max-height: 100%;
+            padding: 1vw;
+            padding-top: 6vh;
             display: flex;
             flex-direction: column;
             .data-wrapper-normal {
               width: 100%;
-              height: 100%;
+              height: 85%;
+              max-height: 80%;
+              overflow: scroll;
               display: flex;
               flex-direction: column;
             }
@@ -1159,13 +1278,13 @@ function deepUnref(obj: any): any {
             }
             .button-section {
                 width: 100%;
-                height: fit-content;
-                padding: 0.5rem;
+                height: 15%;
                 align-items: center;
                 justify-content: center;
+                @extend %centered;
                 button {
-                    width: fit-content;
-                    padding: 0.5rem 1rem;
+                    width: fit-content !important;
+                    padding: 0.5vw 1vw;
                     border-radius: 10px;
                     color: $color-text;
                     border-radius: 14px;
@@ -1183,13 +1302,14 @@ function deepUnref(obj: any): any {
                     justify-content: center;
                     svg {
                         margin-bottom: -1px;
+                        width: 1.25vw;
+                        aspect-ratio: 1/1;                    
                     }
                 }
             }
           }
           .graphic-container {
-              width: 50%;
-              height: 100%;
+              @extend %filler;
               background-color: $color-accent-lightened;
               border-top-right-radius: 10px;
               border-bottom-right-radius: 10px;
@@ -1272,10 +1392,50 @@ function deepUnref(obj: any): any {
     }
   }
 }
+::v-deep .multiselect {
+  min-height: 0;
+}
+::v-deep .multiselect__select {
+  height: 100%;
+  width: 10%;
+  line-height: 0;
+  @extend %centered;
+}
+::v-deep .multiselect__select::before {
+  margin-top: 0;
+  top: 0;
+}
+::v-deep .multiselect__tags {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0.5vw;
+}
+::v-deep .multiselect__input {
+  font-size: px-to-vw(15);
+}
+::v-deep .multiselect__single {
+  font-size: px-to-vw(15);
+}
+::v-deep .multiselect__placeholder {
+  margin-bottom: 0;
+  font-size: px-to-vw(15);
+}
 ::v-deep .multiselect__tag {
   background-color: $color-primary;
   font-family: 'Nunito';
-  font-size: 12px;
+  font-size: px-to-vw(12);
+}
+::v-deep .multiselect__tag-icon::after {
+  font-size: px-to-vw(14);
+}
+::v-deep .multiselect__tag-icon {
+  margin-left: 0;
+  line-height: 0;
+  width: fit-content;
+  height: 100%;
+  @extend %centered;
+  right: px-to-vw(10);
 }
 ::v-deep .multiselect__option--highlight {
   background-color: $color-primary;
@@ -1291,19 +1451,20 @@ function deepUnref(obj: any): any {
 }
 .form-input {
   width: 100%;
-  padding: 0.5rem 1rem;
+  padding: 0.5vw 1vw;
   border-radius: 20px;
   border: 1px solid lightgray;
+  font-size: px-to-vw(15);
 }
 input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
   
-  width: 18px;
-  height: 18px;
+  width: px-to-vw(18);
+  height: px-to-vw(18);
   border: 2px solid #999;
-  border-radius: 4px;
+  border-radius:  px-to-vw(4);
   cursor: pointer;
   position: relative;
   transition: background 0.2s ease;
@@ -1314,15 +1475,172 @@ input[type="checkbox"]:checked {
   border-color: transparent;
 }
 
+
 input[type="checkbox"]:checked::after {
   content: "";
   position: absolute;
-  top: 1px;
-  left: 4.5px;
-  width: 4px;
-  height: 8px;
+  top: 40%;
+  left: 50%;
+  width: 40%;
+  height: 80%;
   border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+  border-width: 0 0.2vw 0.2vw 0;
+  border-radius: 2px;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.modal-confirmation-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  @extend %filler;
+  @extend %centered;
+  z-index: 9999;
+  .modal-confirmation-content {
+    position: relative;
+    width: 65%;
+    height: 70%;
+    background-color: $color-background;
+    border-radius: 20px;
+    display: flex;
+  }
+  .close-btn {
+    position: absolute;
+    top: px-to-vw(20);
+    right: px-to-vw(20);
+    cursor: pointer;
+    z-index: 999;
+  }
+  .text-half {
+    flex: 1;
+    border-top-left-radius: 20px;
+    border-bottom-left-radius: 20px;
+    padding: 1.5vw;
+    display: flex;
+    flex-direction: column;
+    h1 {
+      font-family: 'Manrope';
+      font-size: px-to-vw(40);
+    }
+    .book-metadata {
+      p {
+        font-family: 'Nunito';
+        font-size: px-to-vw(17);
+      }
+      margin-top: 2%;
+      margin-bottom: 5%;
+    }
+    .requester-data {
+      p {
+        font-family: 'Nunito';
+        font-size: px-to-vw(15);
+      }
+    }
+    .button-container {
+      margin-top: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 10%;
+      .accept-btn {
+        height: 75%;
+        aspect-ratio: 3/1;
+        font-family: 'Nunito';
+        border-radius: 14px;
+        background: linear-gradient(to right, $color-secondary, $color-secondary-lightened);
+        font-size: px-to-vw(15);
+        cursor: pointer;
+        border: 4px solid $color-background;
+        transition: box-shadow 0.4s ease;
+        &:hover {
+            box-shadow: 0 0 0 4px $color-primary;
+        }
+      }    
+      .deny-btn {
+        height: 75%;
+        aspect-ratio: 3/1;
+        font-family: 'Nunito';
+        border-radius: 14px;
+        background: #ff9b9b;
+        font-size: px-to-vw(15);
+        cursor: pointer;
+        border: 4px solid $color-background;
+        transition: box-shadow 0.4s ease;
+        &:hover {
+            box-shadow: 0 0 0 4px #ff9b9b;
+        }
+      }    
+    }
+  }
+  .image-half {
+    background-color: $color-accent;
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+    align-items: center;
+    justify-content: center;
+    .state-container {
+      @extend %centered;
+      flex-direction: column;
+      height: 50%;
+      aspect-ratio: 1/1;
+      .icon-container {
+        @extend %centered;
+        height: 100%;
+        aspect-ratio: 1/1;
+        svg {
+          width: 75%;
+          aspect-ratio: 1/1;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 2;
+        }
+        svg path:nth-child(1) {
+          stroke-dasharray: 4.1886;
+          stroke-dashoffset: 4.1886;
+          animation: draw-svg 0.5s ease forwards;
+        }
+    
+        svg path:nth-child(2) {
+          stroke-dasharray: 40.9641;
+          stroke-dashoffset: 40.9641;
+          animation: draw-svg 1s ease forwards 0.5s;
+        }
+      }
+    }
+  }
+}
+::-webkit-scrollbar {
+  width: 0;
+  height: 0.5vw;
+}
+::-webkit-scrollbar-thumb {
+  background-color: $color-primary;
+  border-radius: 20px;
+}
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+@media screen and (max-width: 850px) {
+  .sidebar {
+    display: none;
+  }
+  .navbar {
+    display: flex;
+  }
+  .graphic-container {
+    flex: 0;
+  }
+}
+@media screen and (min-width: 850px) {
+  .sidebar {
+    display: flex;
+  }
+  .navbar {
+    display: none;
+  }
+  .graphic-container {
+    flex: 1;
+  }
 }
 </style>

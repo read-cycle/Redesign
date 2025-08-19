@@ -1,15 +1,24 @@
+<script setup lang="ts">
+import { type DocumentReference } from 'firebase/firestore';
+import { type BuyerRequestedDoc } from '../interfaces';
+
+const props = defineProps<{
+  docData: [DocumentReference, BuyerRequestedDoc],
+  uploader: boolean
+}>();
+</script>
 <template>
     <li class="table-item">
         <div class="item-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-binary-icon lucide-binary"><rect x="14" y="14" width="4" height="6" rx="2"/><rect x="6" y="4" width="4" height="6" rx="2"/><path d="M6 20h4"/><path d="M14 10h4"/><path d="M6 14h2v6"/><path d="M14 4h2v6"/></svg>
         </div>
         <div class="item-text">
-          <h1 class="item-header">Computer Science</h1>
-          <h3 class="item-grade">Grade 2</h3>
-          <h3 class="item-grade">John Doe</h3>
+          <h1 class="item-header">{{ props.docData?.[1]?.title?.name }}</h1>
+          <h3 class="item-grade">{{ props.docData?.[1]?.grade?.name }}</h3>
+          <h3 class="item-grade">{{ uploader ? props.docData?.[1]?.buyerName : props.docData?.[1]?.uploaderName }}</h3>
         </div>
         <div class="metadata-container">
-          <p>₹100</p>
+          <p>₹{{ props.docData?.[1]?.priceMode?.code == 'priced' ? props.docData?.[1]?.price : 'Free' }}</p>
         </div>
     </li>
 </template>

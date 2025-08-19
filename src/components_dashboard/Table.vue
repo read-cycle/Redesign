@@ -1,34 +1,88 @@
 <script setup lang="ts">
+import { onAuthStateChanged } from 'firebase/auth';
 import TableItem from './TableItem.vue';
-defineProps({
+import { auth, db } from '../firebase-init';
+import router from '../router';
+import { collection, deleteDoc, DocumentReference, getDocs, orderBy, query, where } from 'firebase/firestore';
+import type { UploadDoc } from '../interfaces';
+import { ref, type Ref } from 'vue';
+const props = defineProps({
   header: String,
-  icon: String
+  icon: String,
+  tableType: String
 })
+let userID: string | null = null;
+
+const docsData: Ref<[DocumentReference, UploadDoc][]> = ref([]);
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    userID = user.uid;
+    
+    if(props.tableType == 'listings') {
+      const uploadDocs = query(
+        collection(db, 'uploadPool'),
+        where('uploaderID', '==', userID),
+        orderBy('timestamp', 'desc')
+      );
+
+      getDocs(uploadDocs).then((result) => {
+        console.log(result)
+        docsData.value = result.docs.map((doc) => {
+          const data = doc.data() as UploadDoc;
+          return [doc.ref, { id: doc.id, ...data }] as [DocumentReference, UploadDoc];
+        });
+      });
+    } else {
+      const uploadDocs = query(
+        collection(db, 'watchlist'),
+        where('buyerID', '==', userID),
+        orderBy('timestamp', 'desc')
+      );
+
+      getDocs(uploadDocs).then((result) => {
+        docsData.value = result.docs.map((doc) => {
+          const data = doc.data() as UploadDoc;
+          return [doc.ref, { id: doc.id, ...data }] as [DocumentReference, UploadDoc];
+        });
+      });
+    }
+  } else {
+    router.push('/login')
+  }
+})
+
+function handleDelete(docRef: DocumentReference) {
+  deleteDoc(docRef)
+    .then(() => {
+      docsData.value = docsData.value.filter(d => d[0].id !== docRef.id);
+    })
+}
 </script>
 <template>
 <div class="table-container">
     <div class="table-header">
       <div class="table-header-icon" v-html="icon">
       </div>
-      <p>{{ header }}</p>
+      <p class="table-header-text">{{ header }}</p>
+      <button class="add-watchlist" v-if="tableType === 'watchlist'" @click="$emit('watchlist-click')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-icon lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
       <div class="options-container">
         <div class="input-box">
           <input class="search-input" placeholder="Search..."/>
         </div>
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-down-narrow-wide-icon lucide-arrow-down-narrow-wide"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="M11 4h4"/><path d="M11 8h7"/><path d="M11 12h10"/></svg>
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-funnel-icon lucide-funnel"><path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"/></svg>
+        <button class="option-btn-container"><svg xmlns="http://www.w3.org/2000/svg"viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-down-narrow-wide-icon lucide-arrow-down-narrow-wide"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="M11 4h4"/><path d="M11 8h7"/><path d="M11 12h10"/></svg></button>
+        <button class="option-btn-container"><svg xmlns="http://www.w3.org/2000/svg"viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-funnel-icon lucide-funnel"><path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"/></svg></button>
       </div>
     </div>
     <div class="table-data">
       <ul class="table-list">
-        <TableItem v-for="_i in 5"></TableItem>
+        <TableItem v-for="doc in docsData" :doc="doc" @delete="handleDelete"></TableItem>
       </ul>
     </div>
 </div>
 </template>
 <style lang="scss" scoped>
 .table-container {
-  grid-row: 13 / 20;
   background-color: $color-background-secondary;
   border-radius: 10px;
   display: flex;
@@ -51,6 +105,23 @@ defineProps({
     color: $color-text;
     .table-header-icon {
       @extend %centered;
+      ::v-deep svg {
+        width: 1vw;
+        aspect-ratio: 1/1;
+      }
+    }
+    .table-header-text {
+      font-weight: 700;
+    }
+    .add-watchlist {
+      @extend %centered;
+      background-color: transparent;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      svg {
+        aspect-ratio: 1/1;
+      }
     }
   }
   .table-data {
@@ -82,6 +153,15 @@ defineProps({
   width: 50%;
   column-gap: 15px;
   color: $color-text;
+  .option-btn-container {
+    @extend %centered;
+    background-color: transparent;
+    border: none;
+    outline: none;
+    svg {
+      aspect-ratio: 1/1;
+    }
+  }
 }
 .input-box {
   width: 35%;
@@ -92,5 +172,62 @@ defineProps({
   outline: none;
   border-bottom: $color-accent 1px solid;
   width: 100%;
+}
+@media screen and (max-width: 550px) {
+  .input-box {
+    width: 50%;
+  }
+  .table-header-text {
+    font-size: px-to-vw(40);
+  }
+  .search-input {
+    font-size: px-to-vw(35);
+  }
+  .option-btn-container {
+    svg {
+      width: 2vw;
+    }
+  }
+  .add-watchlist {
+    svg {
+      width: 2vw;
+    }
+  }
+}
+@media screen and (min-width: 550px) {
+  .table-header-text {
+    font-size: px-to-vw(25);
+  }
+  .search-input {
+    font-size: px-to-vw(22);
+  }
+  .option-btn-container {
+    svg {
+      width: 2vw;
+    }
+  }
+  .add-watchlist {
+    svg {
+      width: 2vw;
+    }
+  }
+}
+@media screen and (min-width: 850px) {
+  .table-header-text {
+    font-size: px-to-vw(15);
+  }
+  .search-input {
+    font-size: px-to-vw(12);
+  }
+  .option-btn-container {
+    svg {
+      width: 0.75vw;
+    }
+  }
+  .add-watchlist {
+    svg {
+      width: 0.75vw;
+    }
+  }
 }
 </style>

@@ -51,6 +51,30 @@ function clearInput() {
     </form>
 </template>
 <style lang="scss" scoped>
+@media screen and (max-width: 850px) {
+  .input-box {
+    font-size: px-to-vw(30);
+  }
+  .input-box-container {
+    legend {
+        font-size: px-to-vw(20);
+        margin: px-to-vw(-12);
+        margin-inline-start: px-to-vw(110);
+    }
+  }
+}
+@media screen and (min-width: 850px) {
+  .input-box {
+    font-size: px-to-vw(14);
+  }
+  .input-box-container {
+    legend {
+        font-size: px-to-vw(10);
+        margin: px-to-vw(-6);
+        margin-inline-start: px-to-vw(55);
+    }
+  }
+}
 @keyframes subtleWiggle {
   0%, 100% {
     transform: translateY(0);
@@ -77,9 +101,6 @@ function clearInput() {
       }
     }
     legend {
-        font-size: px-to-vw(10);
-        margin: px-to-vw(-6);
-        margin-inline-start: px-to-vw(55);
         z-index: 20;
     }
 }
@@ -105,7 +126,6 @@ function clearInput() {
     border-top-right-radius: 30px;
     border-bottom-right-radius: 30px;
     padding-left: 5px;
-    font-size: px-to-vw(14);
 }
 .optional-buttons {
     position: absolute;

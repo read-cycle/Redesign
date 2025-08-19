@@ -80,9 +80,10 @@ const isDisabled = computed(() => props.disabled ?? false)
 <style lang="scss" scoped>
 input {
   width: 100%;
-  padding: 0.5rem 1rem;
+  padding: 0.5vw 1vw;
   border-radius: 20px;
   border: 1px solid lightgray;
+  font-size: px-to-vw(15);
 }
 .autocomplete {
   width: 100%;

@@ -20,25 +20,22 @@ const icons = ['<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" v
   </div>
 </div>
 </template>
-<style lang="scss">
+<style lang="scss" scoped>
 .cta {
   position: relative;
-  grid-row: 3 / 12;
-  grid-column: 4 / 18;
   border-radius: 10px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   .text-container {
     width: 100%;
-    height: 25%;
     @extend %centered;
     flex-direction: column;
     .cta-header {
       background: linear-gradient(to right, $color-primary, $color-accent);
+      background-clip: text;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      font-size: 50px;
       font-family: 'Manrope';
     }
     .cta-para {
@@ -49,10 +46,48 @@ const icons = ['<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" v
     height: 75%;
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: 1fr;
     column-gap: 1vw;
     padding: 1vw;
+  }
+}
+@media screen and (max-width: 850px) {
+  .cta-header {
+    font-size: px-to-vw(70);
+  }
+  .cta-para {
+    font-size: px-to-vw(30);
+  }
+  .card-track {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(3, 1fr);
+    gap: 5px;
+  }
+  .cta {
+    grid-row: 3 / 41;
+    grid-column: 20 / 60;
+    .text-container {
+      height: 10%;
+    }
+  }
+}
+@media screen and (min-width: 850px) {
+  .cta-header {
+    font-size: px-to-vw(48);
+  }
+  .cta-para {
+    font-size: px-to-vw(16);
+  }
+  .card-track {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: 1fr;
+  }
+  .cta {
+    grid-row: 3 / 12;
+    grid-column: 4 / 18;
+    gap: 0;
+    .text-container {
+      height: 25%;
+    }
   }
 }
 </style>

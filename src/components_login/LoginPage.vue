@@ -340,42 +340,119 @@ const newUser = ref(false);
     </div>
 </template>
 <style lang="scss" scoped>
+@media screen and (max-width: 850px) {
+  .sign-up {
+    font-size: px-to-vw(28);
+  }
+  .alt-login {
+    svg {
+        width: px-to-vw(45);
+        height: px-to-vw(45);
+    }
+  }
+  .graphic-half-login {
+    display: none;
+  }
+  .login-box {
+    aspect-ratio: 4/5;
+  }
+  .login-logo {
+      .logo-icon {
+          width: px-to-vw(75);
+      }
+      font-size: px-to-vw(45);
+  }
+  .login-header{
+    font-size: 6vw;
+  }
+  .login-para {
+    font-size: px-to-vw(26);
+  }
+  .social-hint {
+    font-size: px-to-vw(26);
+  }
+  .login-btn {
+    font-size: px-to-vw(50);
+  }
+  .forgot-password {
+    font-size: px-to-vw(28);
+  }
+  .remember-me-container {
+    font-size: px-to-vw(28);
+  }
+}
+@media screen and (min-width: 850px) {
+  .sign-up {
+    font-size: px-to-vw(14);
+  }
+  .alt-login {
+    svg {
+        width: px-to-vw(20);
+        height: px-to-vw(20);
+    }
+  }
+  .login-logo {
+      .logo-icon {
+          width: px-to-vw(25);
+      }
+      font-size: px-to-vw(15);
+  }
+  .login-box {
+    aspect-ratio: 2/1;
+  }
+  .login-header{
+    font-size: 3vw;
+  }
+  .login-para {
+    font-size: px-to-vw(13);
+  }
+  .social-hint {
+    font-size: px-to-vw(13);
+  }
+  .login-btn {
+    font-size: px-to-vw(20);
+  }
+  .forgot-password {
+    font-size: px-to-vw(14);
+  }
+  .remember-me-container {
+    font-size: px-to-vw(14);
+  }
+}
 .fade-enter-active, .fade-leave-active {
   transition: opacity 0.4s ease;
 }
 .fade-enter-from, .fade-leave-to {
   opacity: 0;
 }
-
 input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
   
-  width: 18px;
-  height: 18px;
+  width: px-to-vw(18);
+  height: px-to-vw(18);
   border: 2px solid #999;
-  border-radius: 4px;
+  border-radius:  px-to-vw(4);
   cursor: pointer;
   position: relative;
   transition: background 0.2s ease;
 }
-
 input[type="checkbox"]:checked {
   background-color: $color-primary;
   border-color: transparent;
 }
-
 input[type="checkbox"]:checked::after {
   content: "";
   position: absolute;
-  top: 1px;
-  left: 4.5px;
-  width: 4px;
-  height: 8px;
+  top: 40%;
+  left: 50%;
+  width: 40%;
+  height: 80%;
   border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+  border-width: 0 0.2vw 0.2vw 0;
+  border-radius: 2px;
+  transform: translate(-50%, -50%) rotate(45deg);
 }
 .fade-enter-active, .fade-leave-active {
   transition: opacity 0.5s ease;
@@ -394,17 +471,15 @@ input[type="checkbox"]:checked::after {
 }
 .login-box {
     width: 72%;
-    aspect-ratio: 2/1;
     background-color: $color-background;
     border-radius: 30px;
     display: flex;
     overflow: hidden;
 }
 .text-half-login {
-    width: 50%;
-    height: 100%;
+    flex: 1;
     display: grid;
-    padding: 4rem;
+    padding: 4vw;
     padding-top: 0;
     font-family: 'Manrope';
     grid-template-rows: repeat(20, 1fr);    
@@ -415,22 +490,15 @@ input[type="checkbox"]:checked::after {
         height: 100%;
         column-gap: 10px;
         .logo-icon {
-            width: 25px;
-            height: 25px;
+            aspect-ratio: 1/1; 
         }
-        font-size: px-to-vw(15);
     }
     .login-header-container {
         grid-row: 4/5;
         .login-header {
-            font-size: 3vw;
             color: $color-accent;
         }
-        .login-para {
-            font-size: px-to-vw(13);
-        }
         .social-hint {
-            font-size: px-to-vw(13);
             a {
                 text-decoration: underline;
                 color: $color-accent;
@@ -440,11 +508,10 @@ input[type="checkbox"]:checked::after {
     }
 }
 .graphic-half-login {
-    width: 50%;
-    height: 100%;
-    padding: 0.5rem;
+    flex: 1;
+    padding: 0.5vw;
     .carousel-container {
-        padding: 1rem;
+        padding: 1vw;
         width: 100%;
         height: 100%;
         border-radius: 30px;
@@ -472,6 +539,7 @@ input[type="checkbox"]:checked::after {
                 justify-content: center;
                 font-family: 'Nunito';
                 color: white;
+                font-size: px-to-vw(15);
             }
         }
         .slide-indicator-container {
@@ -507,7 +575,6 @@ input[type="checkbox"]:checked::after {
     flex-direction: column;
     row-gap: px-to-vw(10);
     .sign-up {
-        font-size: px-to-vw(14);
         color: $color-accent;
         text-decoration: underline;
         cursor: pointer;
@@ -525,7 +592,6 @@ input[type="checkbox"]:checked::after {
             font-family: 'Nunito';
             border-radius: 14px;
             background: linear-gradient(to right, $color-secondary, $color-secondary-lightened);
-            font-size: px-to-vw(20);
             cursor: pointer;
             border: 4px solid $color-background;
             transition: box-shadow 0.4s ease;
@@ -544,9 +610,9 @@ input[type="checkbox"]:checked::after {
     .metadata-container {
         width: 50%;
         display: flex;
+        align-items: center;
         justify-content: space-between;
         .forgot-password {
-            font-size: px-to-vw(14);
             color: $color-accent;
             text-decoration: underline;
             cursor: pointer;
@@ -556,7 +622,6 @@ input[type="checkbox"]:checked::after {
             display: flex;
             align-items: center;
             column-gap: 5px;
-            font-size: px-to-vw(14);
             color: $color-accent;
         }
     }
@@ -579,10 +644,6 @@ input[type="checkbox"]:checked::after {
         border: none;
         cursor: pointer;
         background-color: $color-secondary; 
-        svg {
-            width: px-to-vw(20);
-            height: px-to-vw(20);
-        }
         border: 2px solid $color-background;
         transition: box-shadow 0.4s ease;
         &:hover {
