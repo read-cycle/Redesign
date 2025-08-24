@@ -83,7 +83,6 @@ input {
   padding: 0.5vw 1vw;
   border-radius: 20px;
   border: 1px solid lightgray;
-  font-size: px-to-vw(15);
 }
 .autocomplete {
   width: 100%;
@@ -106,5 +105,25 @@ li {
 li:hover {
   background: $color-primary;
   color: white;
+}
+@media screen and (min-width: 1025px) {
+  input {
+    font-size: px-to-vw(15);
+  }
+}
+@media screen and (max-width: 1025px) {
+  input {
+    font-size: px-to-vw(20);
+  }
+}
+@media screen and (max-width: 950px) {
+  input {
+    font-size: px-to-vw(30);
+  }
+}
+@media screen and (max-width: 550px) {
+  input {
+    font-size: px-to-vw(50);
+  }
 }
 </style>

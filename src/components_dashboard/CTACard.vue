@@ -14,17 +14,15 @@ onMounted(() => {
   ctaCard.value.style.height = '100%';
 
   const { width, height } = ctaCard.value.getBoundingClientRect();
-  
-  const shouldSwap = window.innerWidth < 850;
-  const condition = shouldSwap ? (height > width) : (width > height);
 
-  if (condition) {
+  if (height > width) {
     ctaCard.value.style.height = 'auto';
     ctaCard.value.style.width = '100%';
   } else {
     ctaCard.value.style.width = 'auto';
     ctaCard.value.style.height = '100%';
   }
+  ctaCard.value.style.aspectRatio = '1/1';
 })
 </script>
 <template>
@@ -43,13 +41,13 @@ onMounted(() => {
 .cta-card-container {
   @extend %centered;
   .cta-card {
-    width: 100%;
-    height: 100%;
     position: relative;
-    aspect-ratio: 1 / 1;
     cursor: pointer;
     border: 2px solid $color-background;
     transition: box-shadow 0.4s ease;
+    overflow: hidden;
+    align-self: center;
+    justify-self: center;
     &:hover {
         box-shadow: 0 0 0 4px $color-primary;
     }
@@ -65,7 +63,6 @@ onMounted(() => {
         z-index: 4;
         text-align: center;
         font-family: 'Manrope';
-        font-size: px-to-vw(15);
         border-radius: inherit;
         background-color: rgba(red($color-secondary), green($color-secondary), blue($color-secondary), 0.8);
     }
@@ -82,6 +79,26 @@ onMounted(() => {
         background-position: center center;
         background-repeat: no-repeat;
     }
+  }
+}
+@media screen and (max-width: 1025px) {
+  .card-text {
+    font-size: px-to-vw(20);
+  }
+}
+@media screen and (min-width: 1025px) {
+  .card-text {
+    font-size: px-to-vw(15);
+  }
+}
+@media screen and (max-width: 950px) {
+  .card-text {
+    font-size: px-to-vw(27.5);
+  }
+}
+@media screen and (max-width: 550px) {
+  .card-text {
+    font-size: px-to-vw(40);
   }
 }
 </style>

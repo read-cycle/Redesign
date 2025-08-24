@@ -401,11 +401,12 @@ async function denyRequest() {
       </div>
     </div>
   </div>
+</div>
   <div class="modal-confirmation-container" v-if="toggleConfirmationModal">
       <div class="modal-confirmation-content">
         <div class="close-btn" @click="toggleConfirmationModal = false"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
         <div class="text-half">
-          <h1>Your book has been requested!</h1>
+          <h1 class="confirm-header">Your book has been requested!</h1>
           <div class="book-metadata">
             <p><b>Book Requested:</b> {{ selectedNotif?.[1]?.title?.name }}</p>
             <p><b>Books Grade:</b> {{ selectedNotif?.[1]?.grade?.name }}</p>
@@ -431,10 +432,93 @@ async function denyRequest() {
         </div>
       </div>
   </div>
-</div>
 </template>
 <style lang="scss" scoped>
-@media screen and (max-width: 850px) {
+@media screen and (max-width: 1025px) {
+  .button-container {
+    button {
+      font-size: px-to-vw(50);
+      padding: 1vw 2vw;
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(60);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(40);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(35);
+    }
+  }
+}
+@media screen and (min-width: 1025px) {
+  .button-container {
+    button {
+      font-size: px-to-vw(15);
+      padding: 0.5vw 1.5vw;
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(40);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(15);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(17);
+    }
+  }
+}
+@media screen and (max-width: 950px) {
+  .button-container {
+    button {
+      font-size: px-to-vw(50);
+      padding: 1vw 2vw;
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(67.5);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(45);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(40);
+    }
+  }
+}
+@media screen and (max-width: 550px) {
+  .button-container {
+    button {
+      padding: 2vw 4vw;
+      font-size: px-to-vw(60);
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(80);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(50);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(50);
+    }
+  }
+}
+@media screen and (max-width: 1025px) {
   .table-header-text-side-chat {
     font-size: px-to-vw(25);
   }
@@ -470,7 +554,7 @@ async function denyRequest() {
     grid-column: 14 / 70;
   }
 }
-@media screen and (min-width: 850px) {
+@media screen and (min-width: 1025px) {
   .table-header-text-side-chat {
     font-size: px-to-vw(15);
   }
@@ -790,7 +874,7 @@ async function denyRequest() {
                 color: rgba(0, 0, 0, 0.5);
                 background-color: transparent;
                 svg {
-                  width: 35%;
+                  height: 35%;
                   aspect-ratio: 1/1;
                 }
               }
@@ -814,6 +898,20 @@ async function denyRequest() {
 .attachment-file-input {
   display: none;
 }
+.close-btn {
+  position: absolute;
+  top: px-to-vw(20);
+  right: px-to-vw(20);
+  cursor: pointer;
+  z-index: 999;
+  width: px-to-vw(50);
+  aspect-ratio: 1/1;
+  @extend %centered;
+  svg {
+    width: 50%;
+    aspect-ratio: 1/1;
+  }
+}
 .modal-confirmation-container {
   position: absolute;
   top: 0;
@@ -830,13 +928,6 @@ async function denyRequest() {
     border-radius: 20px;
     display: flex;
   }
-  .close-btn {
-    position: absolute;
-    top: px-to-vw(20);
-    right: px-to-vw(20);
-    cursor: pointer;
-    z-index: 999;
-  }
   .text-half {
     flex: 1;
     border-top-left-radius: 20px;
@@ -846,12 +937,10 @@ async function denyRequest() {
     flex-direction: column;
     h1 {
       font-family: 'Manrope';
-      font-size: px-to-vw(40);
     }
     .book-metadata {
       p {
         font-family: 'Nunito';
-        font-size: px-to-vw(17);
       }
       margin-top: 2%;
       margin-bottom: 5%;
@@ -859,7 +948,6 @@ async function denyRequest() {
     .requester-data {
       p {
         font-family: 'Nunito';
-        font-size: px-to-vw(15);
       }
     }
     .button-container {
@@ -869,12 +957,9 @@ async function denyRequest() {
       align-items: center;
       height: 10%;
       .accept-btn {
-        height: 75%;
-        aspect-ratio: 3/1;
         font-family: 'Nunito';
         border-radius: 14px;
         background: linear-gradient(to right, $color-secondary, $color-secondary-lightened);
-        font-size: px-to-vw(15);
         cursor: pointer;
         border: 4px solid $color-background;
         transition: box-shadow 0.4s ease;
@@ -883,12 +968,9 @@ async function denyRequest() {
         }
       }    
       .deny-btn {
-        height: 75%;
-        aspect-ratio: 3/1;
         font-family: 'Nunito';
         border-radius: 14px;
         background: #ff9b9b;
-        font-size: px-to-vw(15);
         cursor: pointer;
         border: 4px solid $color-background;
         transition: box-shadow 0.4s ease;

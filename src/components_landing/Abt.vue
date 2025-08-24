@@ -1,6 +1,6 @@
 <template>
 <div class="about-us-container" id="about-us">
-    <div class="image-half half">
+    <div class="image-half">
         <div class="scene"></div>
         <div class="me">
             <div class="me-label">
@@ -9,7 +9,7 @@
             </div>
         </div>
     </div>
-    <div class="text-half half">
+    <div class="text-half">
         <h2 class="text-half-heading">Give Books a <span class="sl-imp">Second Life</span></h2>
         <p class="text-half-subheading">
             A simple, <strong>student-run</strong> way to pass on your old textbooks.
@@ -28,10 +28,7 @@
     height: 100dvh;
     background-color: $color-background;
     display: flex;
-}
-.half {
-    width: 50%;
-    height: 100%;
+    position: relative;
 }
 .image-half {
     background-color: $color-accent-lightened;
@@ -39,15 +36,46 @@
 }
 .text-half {
     display: flex;
-    align-items: flex-end;
     justify-content: center;
     flex-direction: column;
-    padding: 4rem;
-    text-align: right;
+    padding: 1rem;
     row-gap: 10px;
 }
+@media screen and (min-width: 1025px) {
+    .text-half {
+        width: 50%;
+        height: 100%;
+        text-align: right;
+        align-items: flex-end;
+    }
+    .image-half {
+        width: 50%;
+        height: 100%;
+    }
+}
+@media screen and (max-width: 1025px) {
+    .text-half {
+        position: relative;
+        z-index: 5;
+        width: 100%;
+        height: 100%;
+        text-align: center;
+        align-items: center;
+    }
+    .image-half {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        z-index: 4;
+        left: 0;
+        top: 0;
+        opacity: 0.25;
+        .me-label {
+            display: none;
+        }
+    }
+}
 .text-half-heading {
-    font-size: px-to-vw(60);
     font-family: 'Manrope';
     color: $color-accent;
     .sl-imp {
@@ -57,12 +85,6 @@
 }
 .text-half-subheading, .text-half-para {
     font-family: 'Nunito';
-}
-.text-half-para {
-    font-size: px-to-vw(16);
-}
-.text-half-subheading {
-    font-size: px-to-vw(25);
 }
 .scene {
     position: absolute;
@@ -100,5 +122,49 @@
     text-align: center;
     font-family: 'Nunito';
     color: white;
+}
+@media screen and (min-width: 1025px) {
+    .text-half-heading {
+        font-size: px-to-vw(60);
+    }
+    .text-half-para {
+        font-size: px-to-vw(16);
+    }
+    .text-half-subheading {
+        font-size: px-to-vw(25);
+    }
+}
+@media screen and (max-width: 1025px) {
+    .text-half-heading {
+        font-size: px-to-vw(120);
+    }
+    .text-half-para {
+        font-size: px-to-vw(45);
+    }
+    .text-half-subheading {
+        font-size: px-to-vw(60);
+    }
+}
+@media screen and (max-width: 950px) {
+    .text-half-heading {
+        font-size: px-to-vw(120);
+    }
+    .text-half-para {
+        font-size: px-to-vw(45);
+    }
+    .text-half-subheading {
+        font-size: px-to-vw(60);
+    }
+}
+@media screen and (max-width: 550px) {
+    .text-half-heading {
+        font-size: px-to-vw(120);
+    }
+    .text-half-para {
+        font-size: px-to-vw(45);
+    }
+    .text-half-subheading {
+        font-size: px-to-vw(60);
+    }
 }
 </style>

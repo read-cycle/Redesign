@@ -139,7 +139,6 @@ onMounted(() => {
         align-items: center;
         justify-content: center;
         font-family: 'Nunito';
-        font-size: px-to-vw(20);
         background-color: $color-background;
         z-index: 4;
       }
@@ -173,11 +172,9 @@ onMounted(() => {
         h1 {
           font-family: 'Manrope';
           font-weight: 700;
-          font-size: px-to-vw(40);
         }
         p {
           font-family: 'Nunito';
-          font-size: px-to-vw(17);
         }
     }
 }
@@ -195,11 +192,9 @@ onMounted(() => {
     h1 {
       font-family: 'Manrope';
       font-weight: 700;
-      font-size: px-to-vw(40);
     }
     p {
       font-family: 'Nunito';
-      font-size: px-to-vw(17);
     }
   }
 }
@@ -216,11 +211,9 @@ onMounted(() => {
     h1 {
       font-family: 'Manrope';
       font-weight: 700;
-      font-size: px-to-vw(40);
     }
     p {
       font-family: 'Nunito';
-      font-size: px-to-vw(17);
     }
   }
 }
@@ -238,11 +231,64 @@ onMounted(() => {
     h1 {
       font-family: 'Manrope';
       font-weight: 700;
-      font-size: px-to-vw(40);
     }
     p {
       font-family: 'Nunito';
+    }
+  }
+}
+@media screen and (min-width: 1025px) {
+  .dot {
+    font-size: px-to-vw(20);
+  }
+  .slide-content {
+    h1 {
+      font-size: px-to-vw(40);
+    }
+    p {
       font-size: px-to-vw(17);
+    }
+  }
+}
+@media screen and (max-width: 1025px) {
+  .dot {
+    font-size: px-to-vw(40);
+  }
+  .slide-content {
+    h1 {
+      font-size: px-to-vw(70);
+    }
+    p {
+      padding: 0 1rem;
+      font-size: px-to-vw(40);
+    }
+  }
+}
+@media screen and (max-width: 950px) {
+  .dot {
+    font-size: px-to-vw(50);
+  }
+  .slide-content {
+    h1 {
+      font-size: px-to-vw(70);
+    }
+    p {
+      padding: 0 1rem;
+      font-size: px-to-vw(40);
+    }
+  }
+}
+@media screen and (max-width: 550px) {
+  .dot {
+    font-size: px-to-vw(90);
+  }
+  .slide-content {
+    h1 {
+      font-size: px-to-vw(120);
+    }
+    p {
+      padding: 0 1rem;
+      font-size: px-to-vw(50);
     }
   }
 }

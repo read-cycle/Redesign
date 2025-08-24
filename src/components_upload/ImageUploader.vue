@@ -138,12 +138,10 @@ function onFileChange(event: Event) {
         text-align: center;
         row-gap: 5px;
         h3 {
-            font-size: px-to-vw(20);
             color: $color-accent;
             font-family: 'Manrope';
         }
         p {
-            font-size: px-to-vw(15);
             font-family: 'Nunito';
         }
         .divider-container {
@@ -152,7 +150,6 @@ function onFileChange(event: Event) {
             justify-content: center;
             column-gap: 10px;
             width: 100%;
-            font-size: px-to-vw(14);
             font-weight: 100;
             font-family: 'Nunito';
             hr {
@@ -174,5 +171,60 @@ function onFileChange(event: Event) {
           }
         }
     }
+}
+@media screen and (min-width: 1025px) {
+  .uploader-text {
+    h3 {
+      font-size: px-to-vw(20);
+    }
+    p {
+      font-size: px-to-vw(15);
+    }
+  }
+  .divider-container {
+    font-size: px-to-vw(14);
+  }
+  .inset-container {
+    height: 90%;
+  }
+}
+@media screen and (max-width: 1025px) {
+  .uploader-text {
+    h3 {
+      font-size: px-to-vw(30);
+    }
+    p {
+      font-size: px-to-vw(26);
+    }
+  }
+  .divider-container {
+    font-size: px-to-vw(30);
+  }
+}
+@media screen and (max-width: 950px) {
+  .uploader-text {
+    h3 {
+      font-size: px-to-vw(50);
+    }
+    p {
+      font-size: px-to-vw(26);
+    }
+  }
+  .divider-container {
+    font-size: px-to-vw(30);
+  }
+}
+@media screen and (max-width: 550px) {
+  .uploader-text {
+    h3 {
+      font-size: px-to-vw(60);
+    }
+    p {
+      font-size: px-to-vw(30);
+    }
+  }
+  .divider-container {
+    font-size: px-to-vw(32);
+  }
 }
 </style>

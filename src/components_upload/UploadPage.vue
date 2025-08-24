@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import Multiselect from 'vue-multiselect'
 import Navbar from '../components/Navbar.vue';
-import "vue-multiselect/dist/vue-multiselect.esm.css"
-import {  onMounted, ref, watch, type Ref, computed, isRef, type ComputedRef  } from 'vue';
+import {  onMounted, ref, watch, type Ref, computed, isRef, type ComputedRef, onBeforeUnmount  } from 'vue';
 import bookSVG from '../assets/icons/book.svg'
 import priceSVG from '../assets/icons/pricing.svg'
 import locationSVG from '../assets/icons/location.svg'
@@ -833,7 +832,44 @@ async function submitData() {
     console.log(progresses.value);
   }
 }
+function useTeleportDropdown(el: HTMLElement) {
+  let dropdown: HTMLElement | null = null
+  const observer = new MutationObserver(() => {
+    const found = el.querySelector(".multiselect__content-wrapper") as HTMLElement
+    if (found && found !== dropdown) {
+      dropdown = found
+      document.body.appendChild(dropdown)
+      positionDropdown()
+    }
+  })
 
+  const positionDropdown = () => {
+    if (!dropdown) return
+    const rect = el.getBoundingClientRect()
+    dropdown.style.position = "absolute"
+    dropdown.style.top = rect.bottom + "px"
+    dropdown.style.left = rect.left + "px"
+    dropdown.style.width = rect.width + "px"
+    dropdown.style.zIndex = "9999"
+  }
+
+  const cleanup = () => {
+    observer.disconnect()
+    if (dropdown) dropdown.remove()
+  }
+
+  observer.observe(el, { childList: true, subtree: true })
+  window.addEventListener("resize", positionDropdown)
+  window.addEventListener("scroll", positionDropdown, true)
+
+  return cleanup
+}
+onMounted(() => {
+  document.querySelectorAll(".multiselect").forEach(el => {
+    const cleanup = useTeleportDropdown(el as HTMLElement)
+    onBeforeUnmount(cleanup)
+  })
+})
 onMounted(() => {
     watch([selectedISBN, selectedTitle, selectedGrade, selectedTags, selectedCondition, conditionDetails, priceMode, price, quantity, deliveryPreference, userLocation, shareLocation, uploaderName, contactPreference, listingImage, extraImages], ([newISBN, newTitle, newGrade, newTags, newCondition, newConditionDetails, newPriceMode, newPrice, newQuantity, newDeliveryPreference, newLocation, newShareLocation, newUploaderName, newContactPreference, newListingImage, newExtraImages], [oldISBN, oldTitle, oldGrade, oldTags, oldCondition, oldConditionDetails, oldPriceMode, oldPrice, oldQuantity, oldDeliveryPreference, oldLocation, oldShareLocation, oldUploaderName, oldContactPreference, oldListingImage, oldExtraImages]) => {
         let delta = 0;
@@ -1082,7 +1118,7 @@ async function denyRequest() {
       <div class="modal-confirmation-content">
         <div class="close-btn" @click="toggleConfirmationModal = false"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
         <div class="text-half">
-          <h1>Your book has been requested!</h1>
+          <h1 class="confirm-header">Your book has been requested!</h1>
           <div class="book-metadata">
             <p><b>Book Requested:</b> {{ selectedNotif?.[1]?.title?.name }}</p>
             <p><b>Books Grade:</b> {{ selectedNotif?.[1]?.grade?.name }}</p>
@@ -1185,7 +1221,6 @@ async function denyRequest() {
                 align-items: center;
                 justify-content: center;
                 img {
-                    width: 75%;
                     @extend %centered;
                 }
             }
@@ -1196,7 +1231,7 @@ async function denyRequest() {
             height: 10px;
             border: none;
             appearance: none;
-            background-color: $color-background-tertiary;
+            background-color: $color-background;
             border-radius: 10px;
             overflow: hidden;
             .progress-fill {
@@ -1233,7 +1268,7 @@ async function denyRequest() {
             .data-wrapper-normal {
               width: 100%;
               height: 85%;
-              max-height: 80%;
+              max-height: 85%;
               overflow: scroll;
               display: flex;
               flex-direction: column;
@@ -1241,7 +1276,6 @@ async function denyRequest() {
             .text-container-header {
                 font-family: 'Manrope';
                 color: $color-accent;
-                font-size: px-to-vw(40);
             }
             .form-section {
                 width: 100%;
@@ -1256,7 +1290,6 @@ async function denyRequest() {
                 .section-label {
                   align-self: flex-start;
                     font-family: 'Nunito';
-                    font-size: px-to-vw(15);
                     font-weight: bold;
                 }
                 .section-content {
@@ -1284,12 +1317,10 @@ async function denyRequest() {
                 @extend %centered;
                 button {
                     width: fit-content !important;
-                    padding: 0.5vw 1vw;
                     border-radius: 10px;
                     color: $color-text;
                     border-radius: 14px;
                     background: linear-gradient(to right, $color-secondary, $color-secondary-lightened);
-                    font-size: px-to-vw(15);
                     cursor: pointer;
                     border: 2px solid $color-background;
                     transition: box-shadow 0.4s ease;
@@ -1302,7 +1333,6 @@ async function denyRequest() {
                     justify-content: center;
                     svg {
                         margin-bottom: -1px;
-                        width: 1.25vw;
                         aspect-ratio: 1/1;                    
                     }
                 }
@@ -1344,7 +1374,7 @@ async function denyRequest() {
   position: absolute;
   top: 90%;
   left: 50%;
-  width: 12vw;
+  width: 180px;
   aspect-ratio: 5/1;
   transform: translate(-50%, -50%);
   padding: 0.5vw;
@@ -1363,6 +1393,7 @@ async function denyRequest() {
       align-items: center;
       justify-content: center;
       cursor: pointer;
+      overflow: hidden;
     }
     .disabled {
       opacity: 0.3;
@@ -1370,12 +1401,13 @@ async function denyRequest() {
       cursor: not-allowed;
     }
     .slide-number-selection {
+      overflow: hidden;
       height: 100%;
       aspect-ratio: 1/1;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: px-to-vw(13);
+      font-size: 13px;
       font-family: 'Nunito';
       border-radius: 50%;
       &:last-child {
@@ -1392,69 +1424,11 @@ async function denyRequest() {
     }
   }
 }
-::v-deep .multiselect {
-  min-height: 0;
-}
-::v-deep .multiselect__select {
-  height: 100%;
-  width: 10%;
-  line-height: 0;
-  @extend %centered;
-}
-::v-deep .multiselect__select::before {
-  margin-top: 0;
-  top: 0;
-}
-::v-deep .multiselect__tags {
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  padding: 0.5vw;
-}
-::v-deep .multiselect__input {
-  font-size: px-to-vw(15);
-}
-::v-deep .multiselect__single {
-  font-size: px-to-vw(15);
-}
-::v-deep .multiselect__placeholder {
-  margin-bottom: 0;
-  font-size: px-to-vw(15);
-}
-::v-deep .multiselect__tag {
-  background-color: $color-primary;
-  font-family: 'Nunito';
-  font-size: px-to-vw(12);
-}
-::v-deep .multiselect__tag-icon::after {
-  font-size: px-to-vw(14);
-}
-::v-deep .multiselect__tag-icon {
-  margin-left: 0;
-  line-height: 0;
-  width: fit-content;
-  height: 100%;
-  @extend %centered;
-  right: px-to-vw(10);
-}
-::v-deep .multiselect__option--highlight {
-  background-color: $color-primary;
-}
-::v-deep .multiselect__option--highlight::after {
-  background-color: $color-primary;
-}
-::v-deep .multiselect__option--selected.multiselect__option--highlight {
-  background-color: #ff6a6a;
-}
-::v-deep .multiselect__option--selected.multiselect__option--highlight::after {
-  background-color: #ff6a6a;
-}
 .form-input {
   width: 100%;
   padding: 0.5vw 1vw;
   border-radius: 20px;
   border: 1px solid lightgray;
-  font-size: px-to-vw(15);
 }
 input[type="checkbox"] {
   appearance: none;
@@ -1488,6 +1462,20 @@ input[type="checkbox"]:checked::after {
   border-radius: 2px;
   transform: translate(-50%, -50%) rotate(45deg);
 }
+.close-btn {
+  position: absolute;
+  top: px-to-vw(20);
+  right: px-to-vw(20);
+  cursor: pointer;
+  z-index: 999;
+  width: px-to-vw(50);
+  aspect-ratio: 1/1;
+  @extend %centered;
+  svg {
+    width: 50%;
+    aspect-ratio: 1/1;
+  }
+}
 .modal-confirmation-container {
   position: absolute;
   top: 0;
@@ -1504,13 +1492,6 @@ input[type="checkbox"]:checked::after {
     border-radius: 20px;
     display: flex;
   }
-  .close-btn {
-    position: absolute;
-    top: px-to-vw(20);
-    right: px-to-vw(20);
-    cursor: pointer;
-    z-index: 999;
-  }
   .text-half {
     flex: 1;
     border-top-left-radius: 20px;
@@ -1520,12 +1501,10 @@ input[type="checkbox"]:checked::after {
     flex-direction: column;
     h1 {
       font-family: 'Manrope';
-      font-size: px-to-vw(40);
     }
     .book-metadata {
       p {
         font-family: 'Nunito';
-        font-size: px-to-vw(17);
       }
       margin-top: 2%;
       margin-bottom: 5%;
@@ -1533,7 +1512,6 @@ input[type="checkbox"]:checked::after {
     .requester-data {
       p {
         font-family: 'Nunito';
-        font-size: px-to-vw(15);
       }
     }
     .button-container {
@@ -1543,12 +1521,9 @@ input[type="checkbox"]:checked::after {
       align-items: center;
       height: 10%;
       .accept-btn {
-        height: 75%;
-        aspect-ratio: 3/1;
         font-family: 'Nunito';
         border-radius: 14px;
         background: linear-gradient(to right, $color-secondary, $color-secondary-lightened);
-        font-size: px-to-vw(15);
         cursor: pointer;
         border: 4px solid $color-background;
         transition: box-shadow 0.4s ease;
@@ -1557,12 +1532,9 @@ input[type="checkbox"]:checked::after {
         }
       }    
       .deny-btn {
-        height: 75%;
-        aspect-ratio: 3/1;
         font-family: 'Nunito';
         border-radius: 14px;
         background: #ff9b9b;
-        font-size: px-to-vw(15);
         cursor: pointer;
         border: 4px solid $color-background;
         transition: box-shadow 0.4s ease;
@@ -1621,7 +1593,44 @@ input[type="checkbox"]:checked::after {
   background-color: transparent;
 }
 
-@media screen and (max-width: 850px) {
+@media screen and (min-width: 1025px) {
+  .sidebar {
+    display: flex;
+  }
+  .navbar {
+    display: none;
+  }
+  .graphic-container {
+    flex: 1;
+  }
+  .section-label {
+    font-size: px-to-vw(15);
+  }
+  .text-container-header {
+    font-size: px-to-vw(40);
+  }
+  .button-section {
+    button {
+      padding: 0.5vw 1vw;
+      font-size: px-to-vw(15);
+      svg {
+        width: 1vw;
+      }
+    }
+  }
+  .slide-number {
+    img {
+      width: 75%;
+    }
+  }
+  .form-input {
+    font-size: px-to-vw(15);
+  }
+  .confirmation-field {
+    font-size: px-to-vw(13);
+  }
+}
+@media screen and (max-width: 1025px) {
   .sidebar {
     display: none;
   }
@@ -1631,16 +1640,192 @@ input[type="checkbox"]:checked::after {
   .graphic-container {
     flex: 0;
   }
-}
-@media screen and (min-width: 850px) {
-  .sidebar {
-    display: flex;
+  .section-label {
+    font-size: px-to-vw(40);
   }
-  .navbar {
+  .text-container-header {
+    font-size: px-to-vw(60);
+  }
+  .button-section {
+    button {
+      padding: 1.25vw 1.75vw;
+      font-size: px-to-vw(40);
+      svg {
+        width: 2.25vw;
+      }
+    }
+  }
+  .slide-number {
+    img {
+      width: 60%;
+    }
+  }
+  .form-input {
+    font-size: px-to-vw(20);
+  }
+  .confirmation-field {
+    font-size: px-to-vw(30);
+  }
+}
+@media screen and (max-width: 950px) {
+  .sidebar {
     display: none;
   }
+  .navbar {
+    display: flex;
+  }
   .graphic-container {
-    flex: 1;
+    flex: 0;
+  }
+  .section-label {
+    font-size: px-to-vw(35);
+  }
+  .text-container-header {
+    font-size: px-to-vw(60);
+  }
+  .button-section {
+    button {
+      padding: 1.5vw 2vw;
+      font-size: px-to-vw(40);
+      svg {
+        width: 2.25vw;
+      }
+    }
+  }
+  .slide-number {
+    img {
+      width: 55%;
+    }
+  }
+  .form-input {
+    font-size: px-to-vw(30);
+  }
+  .confirmation-field {
+    font-size: px-to-vw(27);
+  }
+}
+@media screen and (max-width: 550px) {
+  .sidebar {
+    display: none;
+  }
+  .navbar {
+    display: flex;
+  }
+  .graphic-container {
+    flex: 0;
+  }
+  .section-label {
+    font-size: px-to-vw(50);
+  }
+  .text-container-header {
+    font-size: px-to-vw(80);
+  }
+  .button-section {
+    button {
+      padding: 2vw 3vw;
+      font-size: px-to-vw(60);
+      svg {
+        width: 3vw;
+      }
+    }
+  }
+  .slide-number {
+    img {
+      width: 50%;
+    }
+  }
+  .form-input {
+    font-size: px-to-vw(50);
+  }
+  .share-location-text {
+    font-size: px-to-vw(30);
+  }
+  .confirmation-field {
+    font-size: px-to-vw(40);
+  }
+}
+@media screen and (max-width: 1025px) {
+  .button-container {
+    button {
+      font-size: px-to-vw(50);
+      padding: 1vw 2vw;
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(60);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(40);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(35);
+    }
+  }
+}
+@media screen and (min-width: 1025px) {
+  .button-container {
+    button {
+      font-size: px-to-vw(15);
+      padding: 0.5vw 1.5vw;
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(40);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(15);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(17);
+    }
+  }
+}
+@media screen and (max-width: 950px) {
+  .button-container {
+    button {
+      font-size: px-to-vw(50);
+      padding: 1vw 2vw;
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(67.5);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(45);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(40);
+    }
+  }
+}
+@media screen and (max-width: 550px) {
+  .button-container {
+    button {
+      padding: 2vw 4vw;
+      font-size: px-to-vw(60);
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(80);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(50);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(50);
+    }
   }
 }
 </style>

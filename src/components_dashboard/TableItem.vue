@@ -24,7 +24,7 @@ function deleteDoc() {
 <template>
     <li class="table-item">
         <div class="item-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-binary-icon lucide-binary"><rect x="14" y="14" width="4" height="6" rx="2"/><rect x="6" y="4" width="4" height="6" rx="2"/><path d="M6 20h4"/><path d="M14 10h4"/><path d="M6 14h2v6"/><path d="M14 4h2v6"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-binary-icon lucide-binary"><rect x="14" y="14" width="4" height="6" rx="2"/><rect x="6" y="4" width="4" height="6" rx="2"/><path d="M6 20h4"/><path d="M14 10h4"/><path d="M6 14h2v6"/><path d="M14 4h2v6"/></svg>
         </div>
         <div class="item-text">
           <h1 class="item-header">{{ props.doc[1].title?.name }}</h1>
@@ -39,37 +39,13 @@ function deleteDoc() {
     </li>
 </template>
 <style lang="scss" scoped>
-@media screen and (max-width: 850px) {
-  .item-header {
-    font-size: px-to-vw(60);
-  }
-  .item-grade {
-    font-size: px-to-vw(40);
-  }
-  .item-metadata {
-    font-size: px-to-vw(40);
-  }
-}
-@media screen and (min-width: 850px) {
-  .item-header {
-    font-size: px-to-vw(20);
-  }
-  .item-grade {
-    font-size: px-to-vw(14);
-  }
-  .item-metadata {
-    font-size: px-to-vw(12);
-  }
-}
 .table-item {
   width: 100%;
-  height: 35%;
   padding: 0.5vw;
   display: flex;
   border-bottom: 1px solid lightgray;
   cursor: pointer;
   .item-icon {
-    width: 15%;
     height: 100%;
     @extend %centered;
     color: $color-primary-darkened-2;
@@ -127,6 +103,87 @@ function deleteDoc() {
     flex-direction: column;
     justify-content: center;
     font-family: 'Nunito';
+  }
+}
+@media screen and (max-width: 1025px) {
+  .table-item {
+    height: 30%;
+  }
+  .item-header {
+    font-size: px-to-vw(40);
+  }
+  .item-grade {
+    font-size: px-to-vw(30);
+  }
+  .item-metadata {
+    font-size: px-to-vw(40);
+  }
+  .item-icon {
+    width: 10%;
+    svg {
+      width: 55%;
+      aspect-ratio: 1/1;
+    }
+  }
+}
+@media screen and (min-width: 1025px) {
+  .table-item {
+    height: 35%;
+  }
+  .item-header {
+    font-size: px-to-vw(20);
+  }
+  .item-grade {
+    font-size: px-to-vw(14);
+  }
+  .item-metadata {
+    font-size: px-to-vw(12);
+  }
+  .item-icon {
+    width: 10%;
+    svg {
+      width: 60%;
+      aspect-ratio: 1/1;
+    }
+  }
+}
+@media screen and (max-width: 950px) {
+  .item-header {
+    font-size: px-to-vw(40);
+  }
+  .item-grade {
+    font-size: px-to-vw(30);
+  }
+  .item-metadata {
+    font-size: px-to-vw(40);
+  }
+  .item-icon {
+    width: 15%;
+    svg {
+      width: 40%;
+      aspect-ratio: 1/1;
+    }
+  }
+}
+@media screen and (max-width: 550px) {
+  .table-item {
+    height: 24%;
+  }
+  .item-header {
+    font-size: px-to-vw(70);
+  }
+  .item-grade {
+    font-size: px-to-vw(55);
+  }
+  .item-metadata {
+    font-size: px-to-vw(50);
+  }
+  .item-icon {
+    width: 15%;
+    svg {
+      width: 50%;
+      aspect-ratio: 1/1;
+    }
   }
 }
 </style>

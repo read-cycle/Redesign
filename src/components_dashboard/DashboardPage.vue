@@ -3,7 +3,6 @@ import Sidebar from '../components/Sidebar.vue';
 import Hero from './Hero.vue';
 import Table from './Table.vue';
 import MetaBar from '../components/MetaBar.vue';
-import "vue-multiselect/dist/vue-multiselect.esm.css"
 import StatOption from './StatOption.vue';
 const icons = ['<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock-icon lucide-clock"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="10"/></svg>', '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-binoculars-icon lucide-binoculars"><path d="M10 10h4"/><path d="M19 7V4a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v3"/><path d="M20 21a2 2 0 0 0 2-2v-3.851c0-1.39-2-2.962-2-4.829V8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v11a2 2 0 0 0 2 2z"/><path d="M 22 16 L 2 16"/><path d="M4 21a2 2 0 0 1-2-2v-3.851c0-1.39 2-2.962 2-4.829V8a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v11a2 2 0 0 1-2 2z"/><path d="M9 7V4a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v3"/></svg>', '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload-icon lucide-upload"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>']
 const tableIcons = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-user-icon lucide-book-user"><path d="M15 13a3 3 0 1 0-6 0"/><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/><circle cx="12" cy="8" r="2"/></svg>', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-binoculars-icon lucide-binoculars"><path d="M10 10h4"/><path d="M19 7V4a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v3"/><path d="M20 21a2 2 0 0 0 2-2v-3.851c0-1.39-2-2.962-2-4.829V8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v11a2 2 0 0 0 2 2z"/><path d="M 22 16 L 2 16"/><path d="M4 21a2 2 0 0 1-2-2v-3.851c0-1.39 2-2.962 2-4.829V8a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v11a2 2 0 0 1-2 2z"/><path d="M9 7V4a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v3"/></svg>']
@@ -637,7 +636,7 @@ function deepUnref(obj: any): any {
       <div class="modal-confirmation-content">
         <div class="close-btn" @click="toggleModal = false"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
         <div class="text-half">
-          <h1>Your book has been requested!</h1>
+          <h1 class="confirm-header">Your book has been requested!</h1>
           <div class="book-metadata">
             <p><b>Book Requested:</b> {{ selectedNotif?.[1]?.title?.name }}</p>
             <p><b>Books Grade:</b> {{ selectedNotif?.[1]?.grade?.name }}</p>
@@ -789,7 +788,10 @@ function deepUnref(obj: any): any {
   display: grid;
   position: relative;
 }
-@media screen and (max-width: 850px) {
+@media screen and (max-width: 1025px) {
+  .slide-container {
+    display: block;
+  }
   .images-half, .image-half {
     flex: 0;
   }
@@ -820,11 +822,15 @@ function deepUnref(obj: any): any {
   .stat-container {
     grid-column: 10 / 70;
     grid-row: 60 / 63;
-    gap: 10px;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: 1fr;
   }
   
 }
-@media screen and (min-width: 850px) {
+@media screen and (min-width: 1025px) {
+  .slide-container {
+    display: flex;
+  }
   .images-half, .image-half {
     flex: 1;
   }
@@ -855,23 +861,16 @@ function deepUnref(obj: any): any {
   .stat-container {
     grid-column: 10/12;
     grid-row: 13/20;
-    flex-direction: column;
-  }
-}
-@media screen and (max-width: 550px) {
-  .table-header-text {
-    font-size: px-to-vw(25);
-  }
-}
-@media screen and (min-width: 550px) {
-  .table-header-text {
-    font-size: px-to-vw(15);
+    grid-template-columns: 1fr;  
+    grid-template-rows: repeat(3, 1fr);
   }
 }
 .stat-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-evenly;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  display: grid;
   gap: 10px;
 }
 .stat-light {
@@ -905,22 +904,9 @@ function deepUnref(obj: any): any {
     border-radius: 20px;
     display: flex;
   }
-  .close-btn {
-    position: absolute;
-    top: px-to-vw(20);
-    right: px-to-vw(20);
-    cursor: pointer;
-    z-index: 999;
-    width: px-to-vw(50);
-    aspect-ratio: 1/1;
-    @extend %centered;
-    svg {
-      width: 50%;
-      aspect-ratio: 1/1;
-    }
-  }
   .text-half {
     flex: 1;
+    overflow: hidden;
     border-top-left-radius: 20px;
     border-bottom-left-radius: 20px;
     padding: 1.5vw;
@@ -928,12 +914,10 @@ function deepUnref(obj: any): any {
     flex-direction: column;
     h1 {
       font-family: 'Manrope';
-      font-size: px-to-vw(40);
     }
     .book-metadata {
       p {
         font-family: 'Nunito';
-        font-size: px-to-vw(17);
       }
       margin-top: 2%;
       margin-bottom: 5%;
@@ -941,7 +925,6 @@ function deepUnref(obj: any): any {
     .requester-data {
       p {
         font-family: 'Nunito';
-        font-size: px-to-vw(15);
       }
     }
     .button-container {
@@ -951,12 +934,9 @@ function deepUnref(obj: any): any {
       align-items: center;
       height: 10%;
       .accept-btn {
-        height: 75%;
-        aspect-ratio: 3/1;
         font-family: 'Nunito';
         border-radius: 14px;
         background: linear-gradient(to right, $color-secondary, $color-secondary-lightened);
-        font-size: px-to-vw(15);
         cursor: pointer;
         border: 4px solid $color-background;
         transition: box-shadow 0.4s ease;
@@ -965,12 +945,9 @@ function deepUnref(obj: any): any {
         }
       }    
       .deny-btn {
-        height: 75%;
-        aspect-ratio: 3/1;
         font-family: 'Nunito';
         border-radius: 14px;
         background: #ff9b9b;
-        font-size: px-to-vw(15);
         cursor: pointer;
         border: 4px solid $color-background;
         transition: box-shadow 0.4s ease;
@@ -1035,7 +1012,6 @@ function deepUnref(obj: any): any {
     display: flex;
     .slide-container {
       @extend %filler;
-      display: flex;
       .text-half {
         flex: 1;
         border-top-left-radius: 20px;
@@ -1045,21 +1021,25 @@ function deepUnref(obj: any): any {
         display: flex;
         flex-direction: column;
         row-gap: px-to-vw(30);
+        overflow: hidden;
         .main-container {
           @extend %filler;
           display: flex;
           flex-direction: column;
+          overflow: hidden;
           .other-container-misc {
             display: flex;
             flex-direction: column;
             row-gap: px-to-vw(15);
+            height: 85%;
+            max-height: 85%;
+            overflow-y: scroll;
             .form-section {
                 font-family: 'Nunito';
                 font-size: px-to-vw(14);
                 .section-label {
                   align-self: flex-start;
                   font-family: 'Nunito';
-                  font-size: px-to-vw(15);
                   font-weight: bold;
                 }
             }
@@ -1103,32 +1083,28 @@ function deepUnref(obj: any): any {
           width: 100%;
           h1 {
             font-family: 'Manrope';
-            font-size: px-to-vw(40);
           }
           p {
             font-family: 'Nunito';
-            font-size: px-to-vw(15);
             font-weight: 600;
           }
         }
         .btn-container {
+          overflow: hidden;
           margin-top: auto;
           width: 100%;
           height: 15%;
+          min-height: 15%;
           @extend %centered;
+          padding: 2vw;
           .proceed-btn {
-            height: 75%;
-            aspect-ratio: 4/1;
             font-family: 'Nunito';
             border-radius: 14px;
             background: linear-gradient(to right, $color-secondary, $color-secondary-lightened);
-            font-size: px-to-vw(20);
             cursor: pointer;
-            border: 4px solid $color-background;
-            transition: box-shadow 0.4s ease;
-            &:hover {
-                box-shadow: 0 0 0 4px $color-primary;
-            }
+            outline: none;
+            border: none;
+            overflow: hidden;
           }    
         }
       }
@@ -1140,13 +1116,20 @@ function deepUnref(obj: any): any {
         @extend %centered;
       }
     }
-    .close-btn {
-      position: absolute;
-      top: px-to-vw(20);
-      right: px-to-vw(20);
-      cursor: pointer;
-      z-index: 999;
-    }
+  }
+}
+.close-btn {
+  position: absolute;
+  top: 1.25%;
+  right: 2%;
+  cursor: pointer;
+  z-index: 999;
+  width: 40px;
+  aspect-ratio: 1/1;
+  @extend %centered;
+  svg {
+    width: 50%;
+    aspect-ratio: 1/1;
   }
 }
 .progress-container {
@@ -1203,49 +1186,6 @@ function deepUnref(obj: any): any {
       }
   }
 }
-::v-deep .multiselect {
-  min-height: 0;
-}
-::v-deep .multiselect__select {
-  height: 100%;
-  width: 10%;
-  line-height: 0;
-  @extend %centered;
-}
-::v-deep .multiselect__select::before {
-  margin-top: 0;
-  top: 0;
-}
-::v-deep .multiselect__tags {
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  padding: 0.5vw;
-  input {
-    font-size: px-to-vw(15);
-  }
-}
-::v-deep .multiselect__placeholder {
-  margin-bottom: 0;
-  font-size: px-to-vw(15);
-}
-::v-deep .multiselect__tag {
-  background-color: $color-primary;
-  font-family: 'Nunito';
-  font-size: 12px;
-}
-::v-deep .multiselect__option--highlight {
-  background-color: $color-primary;
-}
-::v-deep .multiselect__option--highlight::after {
-  background-color: $color-primary;
-}
-::v-deep .multiselect__option--selected.multiselect__option--highlight {
-  background-color: #ff6a6a;
-}
-::v-deep .multiselect__option--selected.multiselect__option--highlight::after {
-  background-color: #ff6a6a;
-}
 .form-input {
   width: 100%;
   padding: 0.5vw 1vw;
@@ -1294,5 +1234,269 @@ textarea {
   resize: none;
   width: 100%;
   padding: 0.5vw;
+}
+::-webkit-scrollbar {
+  width: 0;
+  height: 0.5rem;
+}
+::-webkit-scrollbar-thumb {
+  background-color: $color-primary;
+  border-radius: 20px;
+}
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+@media screen and (max-width: 1025px) {
+  .button-container {
+    button {
+      font-size: px-to-vw(50);
+      padding: 1vw 2vw;
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(60);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(40);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(35);
+    }
+  }
+}
+@media screen and (min-width: 1025px) {
+  .button-container {
+    button {
+      font-size: px-to-vw(15);
+      padding: 0.5vw 1.5vw;
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(40);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(15);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(17);
+    }
+  }
+}
+@media screen and (max-width: 950px) {
+  .button-container {
+    button {
+      font-size: px-to-vw(50);
+      padding: 1vw 2vw;
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(67.5);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(45);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(40);
+    }
+  }
+}
+@media screen and (max-width: 550px) {
+  .button-container {
+    button {
+      padding: 2vw 4vw;
+      font-size: px-to-vw(60);
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(80);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(50);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(50);
+    }
+  }
+}
+@media screen and (max-width: 1025px) {
+  .sidebar {
+    display: none;
+  }
+  .navbar {
+    display: flex;
+  }
+  .graphic-container {
+    flex: 0;
+  }
+  .section-label {
+    font-size: px-to-vw(40);
+  }
+  .header-wrapper {
+    h1 {
+      font-size: px-to-vw(60);
+    }
+    p {
+      font-size: px-to-vw(37.5);
+    }
+  }
+  .proceed-btn {
+    padding: 0.75vw 2vw;
+    font-size: px-to-vw(57.5);
+    svg {
+      width: 3vw;
+    }
+  }
+  .slide-number {
+    img {
+      width: 60%;
+    }
+  }
+  .form-input {
+    font-size: px-to-vw(20);
+  }
+  .confirmation-field {
+    font-size: px-to-vw(30);
+  }
+  .share-location-text {
+    font-size: px-to-vw(30);
+  }
+}
+@media screen and (min-width: 1025px) {
+  .sidebar {
+    display: flex;
+  }
+  .navbar {
+    display: none;
+  }
+  .graphic-container {
+    flex: 1;
+  }
+  .section-label {
+    font-size: px-to-vw(15);
+  }
+  .header-wrapper {
+    h1 {
+      font-size: px-to-vw(40);
+    }
+    p {
+      font-size: px-to-vw(12);
+    }
+  }
+  .proceed-btn {
+    padding: 0.5vw 2vw;
+    font-size: px-to-vw(20);
+    svg {
+      width: 3vw;
+    }
+  }
+  .slide-number {
+    img {
+      width: 75%;
+    }
+  }
+  .form-input {
+    font-size: px-to-vw(15);
+  }
+  .confirmation-field {
+    font-size: px-to-vw(13);
+  }
+}
+@media screen and (max-width: 950px) {
+  .sidebar {
+    display: none;
+  }
+  .navbar {
+    display: flex;
+  }
+  .graphic-container {
+    flex: 0;
+  }
+  .section-label {
+    font-size: px-to-vw(35);
+  }
+  .header-wrapper {
+    h1 {
+      font-size: px-to-vw(80);
+    }
+    p {
+      font-size: px-to-vw(40);
+    }
+  }
+  .proceed-btn {
+    padding: 0.75vw 2vw;
+    font-size: px-to-vw(57.5);
+    svg {
+      width: 3vw;
+    }
+  }
+  .slide-number {
+    img {
+      width: 55%;
+    }
+  }
+  .form-input {
+    font-size: px-to-vw(30);
+  }
+  .share-location-text {
+    font-size: px-to-vw(30);
+  }
+  .confirmation-field {
+    font-size: px-to-vw(27);
+  }
+}
+@media screen and (max-width: 550px) {
+  .sidebar {
+    display: none;
+  }
+  .navbar {
+    display: flex;
+  }
+  .graphic-container {
+    flex: 0;
+  }
+  .section-label {
+    font-size: px-to-vw(50);
+  }
+  .header-wrapper {
+    h1 {
+      font-size: px-to-vw(80);
+    }
+    p {
+      font-size: px-to-vw(40);
+    }
+  }
+  .proceed-btn {
+    padding: 0.75vw 2vw;
+    font-size: px-to-vw(57.5);
+    svg {
+      width: 3vw;
+    }
+  }
+  .slide-number {
+    img {
+      width: 50%;
+    }
+  }
+  .form-input {
+    font-size: px-to-vw(50);
+  }
+  .share-location-text {
+    font-size: px-to-vw(50);
+  }
+  .confirmation-field {
+    font-size: px-to-vw(40);
+  }
 }
 </style>

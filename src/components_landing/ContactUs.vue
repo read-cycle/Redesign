@@ -1,6 +1,6 @@
 <template>
 <div class="contact-us-container" id="contact-us">
-<div class="text-half half">
+<div class="text-half">
   <h2 class="text-half-heading">Get in Touch</h2>
   <p class="text-half-subheading">
     Questions? Suggestions? Plane full of books headed my way? I'm all ears.
@@ -31,13 +31,13 @@
         <textarea name="message" rows="4" required placeholder="What's on your mind?"></textarea>
       </label>
     </div>
-    <p class="mail-para"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail-icon lucide-mail"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg> readcycle-inv@gmail.com</p>
+    <p class="mail-para"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail-icon lucide-mail"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg> readcycle-inv@gmail.com</p>
     <div class="form-button-row">
       <button type="submit">Send Message</button>
     </div>
   </form>
 </div>
-    <div class="image-half half">
+    <div class="image-half">
         <div class="image-half-img">
 
         </div>
@@ -52,20 +52,14 @@
     background-color: $color-background;
     display: flex;
 }
-.half {
-    width: 50%;
-    height: 100%;
-}
 .text-half {
     display: flex;
-    align-items: flex-start;
     justify-content: center;
     flex-direction: column;
-    padding: 4rem;
+    padding: 4vw;
     row-gap: 10px;
 }
 .text-half-heading {
-    font-size: px-to-vw(60);
     font-family: 'Manrope';
     color: $color-accent;
     .sl-imp {
@@ -76,11 +70,8 @@
 .text-half-subheading, .text-half-para, .contact-form {
     font-family: 'Nunito';
 }
-.text-half-subheading {
-    font-size: px-to-vw(25);
-}
-.text-half-para {
-  font-size: px-to-vw(16);
+.text-half-subheading, .text-half-para {
+      text-align: center;
 }
 .contact-form {
   width: 100%;
@@ -101,7 +92,6 @@
   display: flex;
   flex-direction: column;
   font-weight: 500;
-  font-size: px-to-vw(10);
 }
 .form-grid input {
     border-radius: 10px;
@@ -110,12 +100,12 @@
 }
 .form-grid textarea {
   resize: vertical;
-  min-height: 100px;
   grid-column: span 2;
   font-family: 'Nunito';
   border-radius: 10px;
   padding: 0.5rem;
   border: 1px lightgray solid;
+  resize: none;
 }
 .form-button-row {
   display: flex;
@@ -123,19 +113,12 @@
 }
 .contact-form button {
   padding: 0.75rem 1.5rem;
-  font-size: px-to-vw(15);
   border: none;
   background: linear-gradient(to right, $color-secondary, $color-secondary-lightened);
   border-radius: 0.5rem;
   cursor: pointer;
-  border: 3px solid $color-background;
-  transition: box-shadow 0.4s ease;
-  &:hover {
-    box-shadow: 0 0 0 3px $color-primary;
-  }
 }
 .image-half {
-    position: relative;
     background-color: $color-accent-lightened;
     .image-half-img {
         position: absolute;
@@ -156,6 +139,135 @@
     display: flex;
     column-gap: 10px;
     align-items: center;
+    svg {
+      width: px-to-vw(30);
+    }
+}
+@media screen and (min-width: 1025px) {
+  .text-half-heading {
+    font-size: px-to-vw(60);
+  }
+  .text-half-subheading {
+      font-size: px-to-vw(25);
+  }
+  .text-half-para {
     font-size: px-to-vw(16);
+  }
+  .text-half {
+    width: 50%;
+    height: 100%;
+    align-items: flex-start;
+  }
+  .image-half {
+    position: relative;
+    width: 50%;
+    height: 100%;
+  }
+  .mail-para {
+    font-size: px-to-vw(16);
+  }
+  .form-grid label {
+    font-size: px-to-vw(10);
+  }
+  .form-grid input, .form-grid textarea {
+    font-size: px-to-vw(15);
+  }
+  .contact-form button {
+    font-size: px-to-vw(15);
+  }
+}
+@media screen and (max-width: 1025px) {
+  .text-half {
+    position: relative;
+    z-index: 4;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+  }
+  .image-half {
+    position: absolute;
+    z-index: 3;
+    width: 75%;
+    height: 100%;
+    left: 25%;
+    top: 0;
+    opacity: 0.5;
+  }
+  .text-half-heading {
+    font-size: px-to-vw(80);
+  }
+  .text-half-subheading {
+      font-size: px-to-vw(45);
+  }
+  .text-half-para {
+    font-size: px-to-vw(40);
+  }
+  .form-grid input, .form-grid textarea {
+    font-size: px-to-vw(35);
+  }
+  .mail-para {
+    font-size: px-to-vw(40);
+    svg {
+      width: px-to-vw(80);
+    }
+  }
+  .contact-form button {
+    font-size: px-to-vw(45);
+  }
+  .form-grid label {
+    font-size: px-to-vw(45);
+  }
+}
+@media screen and (max-width: 950px) {
+  .text-half-heading {
+    font-size: px-to-vw(80);
+  }
+  .text-half-subheading {
+      font-size: px-to-vw(45);
+  }
+  .text-half-para {
+    font-size: px-to-vw(40);
+  }
+  .form-grid input, .form-grid textarea {
+    font-size: px-to-vw(35);
+  }
+  .mail-para {
+    font-size: px-to-vw(35);
+    svg {
+      width: px-to-vw(80);
+    }
+  }
+  .contact-form button {
+    font-size: px-to-vw(30);
+  }
+  .form-grid label {
+    font-size: px-to-vw(40);
+  }
+}
+@media screen and (max-width: 550px) {
+  .text-half-heading {
+    font-size: px-to-vw(90);
+  }
+  .text-half-subheading {
+      font-size: px-to-vw(45);
+  }
+  .text-half-para {
+    font-size: px-to-vw(40);
+  }
+  .form-grid input, .form-grid textarea {
+    font-size: px-to-vw(35);
+  }
+  .mail-para {
+    font-size: px-to-vw(35);
+    svg {
+      width: px-to-vw(80);
+    }
+  }
+  .contact-form button {
+    font-size: px-to-vw(45);
+  }
+  .form-grid label {
+    font-size: px-to-vw(40);
+  }
 }
 </style>

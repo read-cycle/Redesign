@@ -106,7 +106,6 @@ function handleDelete(docRef: DocumentReference) {
     .table-header-icon {
       @extend %centered;
       ::v-deep svg {
-        width: 1vw;
         aspect-ratio: 1/1;
       }
     }
@@ -173,46 +172,30 @@ function handleDelete(docRef: DocumentReference) {
   border-bottom: $color-accent 1px solid;
   width: 100%;
 }
-@media screen and (max-width: 550px) {
-  .input-box {
-    width: 50%;
-  }
+@media screen and (max-width: 1025px) {
   .table-header-text {
     font-size: px-to-vw(40);
   }
   .search-input {
-    font-size: px-to-vw(35);
+    font-size: px-to-vw(20);
   }
   .option-btn-container {
     svg {
-      width: 2vw;
+      width: 1.25vw;
     }
   }
   .add-watchlist {
     svg {
-      width: 2vw;
+      width: 1.25vw;
+    }
+  }
+  .table-header-icon {
+    ::v-deep svg {
+      width: 1.25vw;
     }
   }
 }
-@media screen and (min-width: 550px) {
-  .table-header-text {
-    font-size: px-to-vw(25);
-  }
-  .search-input {
-    font-size: px-to-vw(22);
-  }
-  .option-btn-container {
-    svg {
-      width: 2vw;
-    }
-  }
-  .add-watchlist {
-    svg {
-      width: 2vw;
-    }
-  }
-}
-@media screen and (min-width: 850px) {
+@media screen and (min-width: 1025px) {
   .table-header-text {
     font-size: px-to-vw(15);
   }
@@ -227,6 +210,60 @@ function handleDelete(docRef: DocumentReference) {
   .add-watchlist {
     svg {
       width: 0.75vw;
+    }
+  }
+  .table-header-icon {
+    ::v-deep svg {
+      width: 0.75vw;
+    }
+  }
+}
+@media screen and (max-width: 950px) {
+  .table-header-text {
+    font-size: px-to-vw(50);
+  }
+  .search-input {
+    font-size: px-to-vw(30);
+  }
+  .option-btn-container {
+    svg {
+      width: 2vw;
+    }
+  }
+  .add-watchlist {
+    svg {
+      width: 2vw;
+    }
+  }
+  .table-header-icon {
+    ::v-deep svg {
+      width: 2vw;
+    }
+  }
+}
+@media screen and (max-width: 550px) {
+  .input-box {
+    width: 50%;
+  }
+  .table-header-text {
+    font-size: px-to-vw(70);
+  }
+  .search-input {
+    font-size: px-to-vw(60);
+  }
+  .option-btn-container {
+    svg {
+      width: 3vw;
+    }
+  }
+  .add-watchlist {
+    svg {
+      width: 3vw;
+    }
+  }
+  .table-header-icon {
+    ::v-deep svg {
+      width: 3vw;
     }
   }
 }

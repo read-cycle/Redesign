@@ -86,11 +86,9 @@ const iconHtml = computed(() => docsData.value.length >= 1 ? bellDot : bell)
     font-family: 'Manrope';
     margin-right: auto;
     color: $color-accent;
-    font-size: px-to-vw(35);
 }
 .meta-button {
     position: relative;
-    height: 65%;
     aspect-ratio: 1/1;
     border: none;
     background-color: transparent;
@@ -99,7 +97,7 @@ const iconHtml = computed(() => docsData.value.length >= 1 ? bellDot : bell)
         @extend %filler;
         @extend %centered;
         ::v-deep svg {
-            width: 35%;
+            width: 100%;
         }
     }
 }
@@ -107,7 +105,6 @@ const iconHtml = computed(() => docsData.value.length >= 1 ? bellDot : bell)
   position: absolute;
   top: 100%;
   right: 0;
-  width: 12vw;
   max-height: 40dvh;
   overflow-y: scroll;
   background-color: $color-background;
@@ -126,9 +123,6 @@ const iconHtml = computed(() => docsData.value.length >= 1 ? bellDot : bell)
       align-items: center;
       justify-content: space-between;
       font-family: 'Nunito';
-      label {
-        font-size: px-to-vw(13);
-      }
       .title-label {
         max-width: 70%;
         width: 70%;
@@ -141,7 +135,6 @@ const iconHtml = computed(() => docsData.value.length >= 1 ? bellDot : bell)
       .grade-label {
         max-width: 25%;
         width: 25%;
-        font-size: px-to-vw(10);
         text-overflow: ellipsis;
         text-wrap: nowrap;
         white-space: nowrap;
@@ -161,7 +154,7 @@ const iconHtml = computed(() => docsData.value.length >= 1 ? bellDot : bell)
         background-color: transparent;
         border-radius: 10px;
         border: 1px solid rgba(211, 211, 211);
-        padding: 0.5rem;
+        padding: 0.5vw;
         column-gap: 5px;
       }
       .apply-btn {
@@ -169,14 +162,13 @@ const iconHtml = computed(() => docsData.value.length >= 1 ? bellDot : bell)
         color: white;
         border-radius: 10px;
         border: 1px solid rgba(211, 211, 211);
-        padding: 0.5rem;
+        padding: 0.5vw;
       }
     }
     .selection-track {
       @extend %filler;
       display: flex;
       p {
-        font-size: px-to-vw(11);
         font-family: 'Nunito';
       }
     }
@@ -184,11 +176,122 @@ const iconHtml = computed(() => docsData.value.length >= 1 ? bellDot : bell)
   .title-block {
     label {
       font-family: 'Manrope';
-      font-size: px-to-vw(16);
     }
   }
 }
 ::-webkit-scrollbar {
     width: 0;
+}
+@media screen and (max-width: 1025px) {
+  .page-header {
+    font-size: px-to-vw(60);
+  }
+  .meta-button {
+    height: 30%;
+    margin-left: 1.75vw;
+  }
+  .notifications-dropdown {
+    width: 30vw;
+  }
+  .title-block {
+    label {
+      font-size: px-to-vw(40);
+    }
+  }
+  .label-track {
+    .title-label {
+      font-size: px-to-vw(35);
+    }
+    .grade-label {
+      font-size: px-to-vw(30);
+    }
+  }
+  .selection-track {
+    font-size: px-to-vw(30);
+  }
+}
+@media screen and (min-width: 1025px) {
+  .page-header {
+    font-size: px-to-vw(35);
+  }
+  .meta-button {
+    height: 20%;
+    margin-left: 2vw;
+  }
+  .notifications-dropdown {
+    width: 12vw;
+  }
+  .title-block {
+    label {
+      font-size: px-to-vw(16);
+    }
+  }
+  .label-track {
+    .title-label {
+      font-size: px-to-vw(13);
+    }
+    .grade-label {
+      font-size: px-to-vw(10);
+    }
+  }
+  .selection-track {
+    font-size: px-to-vw(11);
+  }
+}
+@media screen and (max-width: 950px) {
+  .page-header {
+    font-size: px-to-vw(50);
+  }
+  .meta-button {
+    height: 20%;
+    margin-left: 5vw;
+  }
+  .notifications-dropdown {
+    width: 30vw;
+  }
+  .title-block {
+    label {
+      font-size: px-to-vw(40);
+    }
+  }
+  .label-track {
+    .title-label {
+      font-size: px-to-vw(35);
+    }
+    .grade-label {
+      font-size: px-to-vw(30);
+    }
+  }
+  .selection-track {
+    font-size: px-to-vw(30);
+  }
+}
+@media screen and (max-width: 550px) {
+  .page-header {
+    font-size: px-to-vw(70);
+  }
+  .meta-button {
+    height: 32%;
+    margin-left: 4vw;
+  }
+  .notifications-dropdown {
+    width: 40vw;
+  }
+  .title-block {
+    label {
+      font-size: px-to-vw(60);
+    }
+  }
+  .label-track {
+    .title-label {
+      font-size: px-to-vw(45);
+    }
+    .grade-label {
+      font-size: px-to-vw(35);
+    }
+  }
+  .selection-track {
+    font-size: px-to-vw(35);
+  }
 }
 </style>

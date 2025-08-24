@@ -50,7 +50,7 @@ const icons = ['<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" v
     padding: 1vw;
   }
 }
-@media screen and (max-width: 850px) {
+@media screen and (max-width: 1025px) {
   .cta-header {
     font-size: px-to-vw(70);
   }
@@ -70,7 +70,7 @@ const icons = ['<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" v
     }
   }
 }
-@media screen and (min-width: 850px) {
+@media screen and (min-width: 1025px) {
   .cta-header {
     font-size: px-to-vw(48);
   }
@@ -88,6 +88,22 @@ const icons = ['<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" v
     .text-container {
       height: 25%;
     }
+  }
+}
+@media screen and (max-width: 950px) {
+  .cta-header {
+    font-size: px-to-vw(90);
+  }
+  .cta-para {
+    font-size: px-to-vw(37.5);
+  }
+}
+@media screen and (max-width: 550px) {
+  .cta-header {
+    font-size: px-to-vw(90);
+  }
+  .cta-para {
+    font-size: px-to-vw(34);
   }
 }
 </style>

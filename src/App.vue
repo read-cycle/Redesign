@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import './styles/main.scss'
+import './styles/global.scss';
 </script>
-
 <template>
     <RouterView />
 </template>

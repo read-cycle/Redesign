@@ -2,7 +2,6 @@
 import Sidebar from '../components/Sidebar.vue';
 import MetaBar from '../components/MetaBar.vue';
 import BrowserCard from './BrowserCard.vue';
-import "vue-multiselect/dist/vue-multiselect.esm.css"
 import Multiselect from 'vue-multiselect'
 import { computed, isRef, nextTick, onMounted, ref, watch, type ComputedRef, type Ref } from 'vue';
 import Datepicker from 'vue3-datepicker'
@@ -577,6 +576,7 @@ async function denyRequest() {
     console.error("Error denying request:", err);
   }
 }
+const windowWidth = ref(window.innerWidth)
 </script>
 <template>
     <Sidebar class="sidebar"></Sidebar>
@@ -600,11 +600,11 @@ async function denyRequest() {
             <p>Filters</p>
             <div class="option-btn-container">
               <button class="option-btn sort-button" title="Sorting Options" @click="showSorts = !showSorts" ref="sortButtonRef">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-down-wide-narrow-icon lucide-arrow-down-wide-narrow"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="M11 4h10"/><path d="M11 8h7"/><path d="M11 12h4"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-down-wide-narrow-icon lucide-arrow-down-wide-narrow"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="M11 4h10"/><path d="M11 8h7"/><path d="M11 12h4"/></svg>
                 Sort
               </button>
               <button class="option-btn filter-button" title="More Filters" @click="showFilters = !showFilters" ref="filterButtonRef">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-funnel-icon lucide-funnel"><path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-funnel-icon lucide-funnel"><path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"/></svg>
                 Filter
               </button>
               <div v-if="showFilters" class="filter-dropdown">
@@ -718,7 +718,7 @@ async function denyRequest() {
                 </div>
                 <div class="filter-block submit-block">
                   <div class="label-track submit-track">
-                    <button class="delete-btn"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash2-icon lucide-trash-2"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Clear All</button>
+                    <button class="delete-btn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash2-icon lucide-trash-2"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Clear All</button>
                     <button class="apply-btn">Apply All</button>
                   </div>
                 </div>
@@ -817,7 +817,7 @@ async function denyRequest() {
                 <div class="btn-container" v-if="activeSlide !== 3"><button class="proceed-btn" @click="nextSlide()">Proceed</button></div>
               </div>
             </div>
-            <div class="images-half" v-if="activeSlide !== 3">
+            <div class="images-half" v-if="activeSlide === 1 || (activeSlide == 2 && windowWidth > 1280)">
               <div class="images-carousel" v-if="activeSlide === 1">
                 <div class="images-wrapper">
                   <transition :name="`fade-slide-${direction}`" mode="out-in">
@@ -848,7 +848,7 @@ async function denyRequest() {
       <div class="modal-confirmation-content">
         <div class="close-btn" @click="toggleConfirmationModal = false"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
         <div class="text-half">
-          <h1>Your book has been requested!</h1>
+          <h1 class="confirm-header">Your book has been requested!</h1>
           <div class="book-metadata">
             <p><b>Book Requested:</b> {{ selectedNotif?.[1]?.title?.name }}</p>
             <p><b>Books Grade:</b> {{ selectedNotif?.[1]?.grade?.name }}</p>
@@ -874,31 +874,8 @@ async function denyRequest() {
         </div>
       </div>
     </div>
-    <!--TODO: MAKE BROWSER PAGE RESPONSIVE-->
 </template>
 <style lang="scss" scoped>
-@media screen and (max-width: 850px) {
-  .images-half, .image-half {
-    flex: 0;
-  }
-  .sidebar {
-    display: none;
-  }
-  .navbar {
-    display: flex;
-  }
-}
-@media screen and (min-width: 850px) {
-  .images-half, .image-half {
-    flex: 1;
-  }
-  .sidebar {
-    display: flex;
-  }
-  .navbar {
-    display: none;
-  }
-}
 .fade-slide-enter-active,
 .fade-slide-leave-active {
   transition: all 0.4s ease;
@@ -970,10 +947,9 @@ async function denyRequest() {
     grid-row: 5/20;
     grid-column: 4/18;
     display: grid;
-    grid-template-columns: repeat(20, 1fr);
     grid-template-rows: repeat(36, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(240px, 5fr));
     gap: 1rem;
-    height: 200%;
   }
 }
 .filters-bar {
@@ -985,10 +961,8 @@ async function denyRequest() {
     display: flex;
     flex-direction: column;
     row-gap: 5px;
-    p {
-      font-family: 'Nunito';
-      font-size: px-to-vw(12);
-    }
+    font-family: 'Nunito';
+    font-size: px-to-vw(12);
   }
   .filters-box {
     position: relative;
@@ -1013,7 +987,6 @@ async function denyRequest() {
     align-items: center;
     justify-content: center;
     column-gap: 5px;
-    padding: 0.5rem 0.75rem;
     border-radius: 10px;
     border: 1px solid lightgray;
     background-color: transparent;
@@ -1026,7 +999,7 @@ async function denyRequest() {
 }
 .search-input {
   border-radius: 10px;
-  padding: 0.5rem;
+  padding: 0.5vw;
   border: 1px lightgray solid;
   box-shadow: 1px 1px 10px rgba(211, 211, 211, 0.5);
 }
@@ -1050,18 +1023,13 @@ async function denyRequest() {
       align-items: center;
       justify-content: space-between;
       font-family: 'Nunito';
-      label {
-        font-size: px-to-vw(13);
-      }
       .reset-btn {
-        font-size: px-to-vw(10);
         text-decoration: underline;
         color: $color-accent;
       }
     }
     .submit-track {
       button {
-        font-size: px-to-vw(12);
         cursor: pointer;
       }
       .delete-btn {
@@ -1071,7 +1039,6 @@ async function denyRequest() {
         background-color: transparent;
         border-radius: 10px;
         border: 1px solid rgba(211, 211, 211);
-        padding: 0.5rem;
         column-gap: 5px;
       }
       .apply-btn {
@@ -1079,7 +1046,6 @@ async function denyRequest() {
         color: white;
         border-radius: 10px;
         border: 1px solid rgba(211, 211, 211);
-        padding: 0.5rem;
       }
     }
     .selection-track {
@@ -1090,12 +1056,11 @@ async function denyRequest() {
     }
   }
   .submit-block {
-    padding: 0.5rem !important;
+    padding: 0.5vw !important;
   }
   .title-block {
     label {
       font-family: 'Manrope';
-      font-size: px-to-vw(16);
     }
   }
 }
@@ -1112,23 +1077,6 @@ async function denyRequest() {
       }
     }
   }
-}
-::v-deep .multiselect__tag {
-  background-color: $color-primary;
-  font-family: 'Nunito';
-  font-size: px-to-vw(12);
-}
-::v-deep .multiselect__option--highlight {
-  background-color: $color-primary;
-}
-::v-deep .multiselect__option--highlight::after {
-  background-color: $color-primary;
-}
-::v-deep .multiselect__option--selected.multiselect__option--highlight {
-  background-color: #ff6a6a;
-}
-::v-deep .multiselect__option--selected.multiselect__option--highlight::after {
-  background-color: #ff6a6a;
 }
 .modal-book-expanded-container {
   position: absolute;
@@ -1153,7 +1101,7 @@ async function denyRequest() {
         border-top-left-radius: 20px;
         border-bottom-left-radius: 20px;
         padding: 1.5vw;
-        padding-top: 4.5%;
+        padding-top: 6vh;
         display: flex;
         flex-direction: column;
         row-gap: px-to-vw(30);
@@ -1238,8 +1186,6 @@ async function denyRequest() {
         position: relative;
         flex: 1;
         background-color: $color-accent-lightened;
-        border-top-right-radius: 20px;
-        border-bottom-right-radius: 20px;
         @extend %centered;
         .images-carousel {
           width: 90%;
@@ -1299,24 +1245,17 @@ async function denyRequest() {
         }
       }
     }
-    .close-btn {
-      position: absolute;
-      top: px-to-vw(20);
-      right: px-to-vw(20);
-      cursor: pointer;
-      z-index: 999;
-    }
   }
 }
 .progress-container {
   position: absolute;
   top: 0;
   left: 0;
-  height: 7.5%;
+  height: 6vh;
   width: 100%;
   display: flex;
   align-items: center;
-  padding: 0.5rem;
+  padding: 0.5vw;
   z-index: 111;
   .slide-number-container {
       height: 100%;
@@ -1418,7 +1357,7 @@ input[type="checkbox"]:checked::after {
 }
 .form-input {
   width: 100%;
-  padding: 0.5rem 1rem;
+  padding: 0.5vw 1vw;
   border-radius: 20px;
   border: 1px solid lightgray;
 }
@@ -1426,8 +1365,19 @@ input[type="checkbox"]:checked::after {
   font-family: 'Nunito';
   margin-left: 10px;
 }
-.multiselect {
-  font-family: 'Nunito';
+.close-btn {
+  position: absolute;
+  top: px-to-vw(20);
+  right: px-to-vw(20);
+  cursor: pointer;
+  z-index: 999;
+  width: px-to-vw(50);
+  aspect-ratio: 1/1;
+  @extend %centered;
+  svg {
+    width: 50%;
+    aspect-ratio: 1/1;
+  }
 }
 .modal-confirmation-container {
   position: absolute;
@@ -1445,13 +1395,6 @@ input[type="checkbox"]:checked::after {
     border-radius: 20px;
     display: flex;
   }
-  .close-btn {
-    position: absolute;
-    top: px-to-vw(20);
-    right: px-to-vw(20);
-    cursor: pointer;
-    z-index: 999;
-  }
   .text-half {
     flex: 1;
     border-top-left-radius: 20px;
@@ -1461,12 +1404,10 @@ input[type="checkbox"]:checked::after {
     flex-direction: column;
     h1 {
       font-family: 'Manrope';
-      font-size: px-to-vw(40);
     }
     .book-metadata {
       p {
         font-family: 'Nunito';
-        font-size: px-to-vw(17);
       }
       margin-top: 2%;
       margin-bottom: 5%;
@@ -1474,7 +1415,6 @@ input[type="checkbox"]:checked::after {
     .requester-data {
       p {
         font-family: 'Nunito';
-        font-size: px-to-vw(15);
       }
     }
     .button-container {
@@ -1484,12 +1424,9 @@ input[type="checkbox"]:checked::after {
       align-items: center;
       height: 10%;
       .accept-btn {
-        height: 75%;
-        aspect-ratio: 3/1;
         font-family: 'Nunito';
         border-radius: 14px;
         background: linear-gradient(to right, $color-secondary, $color-secondary-lightened);
-        font-size: px-to-vw(15);
         cursor: pointer;
         border: 4px solid $color-background;
         transition: box-shadow 0.4s ease;
@@ -1498,12 +1435,9 @@ input[type="checkbox"]:checked::after {
         }
       }    
       .deny-btn {
-        height: 75%;
-        aspect-ratio: 3/1;
         font-family: 'Nunito';
         border-radius: 14px;
         background: #ff9b9b;
-        font-size: px-to-vw(15);
         cursor: pointer;
         border: 4px solid $color-background;
         transition: box-shadow 0.4s ease;
@@ -1514,7 +1448,6 @@ input[type="checkbox"]:checked::after {
     }
   }
   .image-half {
-    flex: 1;
     background-color: $color-accent;
     border-top-right-radius: 20px;
     border-bottom-right-radius: 20px;
@@ -1549,6 +1482,317 @@ input[type="checkbox"]:checked::after {
           animation: draw-svg 1s ease forwards 0.5s;
         }
       }
+    }
+  }
+}
+@media screen and (min-width: 1025px) {
+  .option-btn {
+    font-size: px-to-vw(15);
+    padding: 0.5vw 0.75vw;
+    svg {
+      width: 1vw;
+    }
+  }
+  .image-half {
+    flex: 1;
+  }
+  .images-half {
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+  }
+  .sidebar {
+    display: flex;
+  }
+  .navbar {
+    display: none;
+  }
+  .grid-container {
+    grid-template-columns: repeat(20, 1fr);
+  }
+  .filter-dropdown {
+    width: 12vw;
+  }
+  .title-block {
+    label {
+      font-size: px-to-vw(16);
+    }
+  }
+  .label-track {
+    label {
+      font-size: px-to-vw(13);
+    }
+    .reset-btn {
+      font-size: px-to-vw(10);
+    }
+  }
+  .selection-track {
+    font-size: px-to-vw(11);
+  }
+  .search-input {
+    font-size: px-to-vw(15);
+  }
+  .submit-track {
+    button {
+      font-size: px-to-vw(10);
+      cursor: pointer;
+      padding: 0.5vw;
+      text-wrap: nowrap;
+      width: 40%;
+    }
+  }
+  .delete-btn {
+    svg {
+      width: 20%;
+    }
+  }
+}
+@media screen and (max-width: 1025px) {
+  .option-btn {
+    font-size: px-to-vw(35);
+    padding: 1vw 1.5vw;
+    svg {
+      width: 1.75vw;
+    }
+  }
+  .image-half {
+    flex: 0;
+  }
+  .slide-container {
+    flex-direction: column;
+  }
+  .images-half {
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+  }
+  .sidebar {
+    display: none;
+  }
+  .navbar {
+    display: flex;
+  }
+  .filter-dropdown {
+    width: 30vw;
+  }
+  .title-block {
+    label {
+      font-size: px-to-vw(50);
+    }
+  }
+  .label-track {
+    label {
+      font-size: px-to-vw(40);
+    }
+    .reset-btn {
+      font-size: px-to-vw(30);
+    }
+  }
+  .selection-track {
+    font-size: px-to-vw(30);
+  }
+  .search-input {
+    font-size: px-to-vw(35);
+  }
+  .submit-track {
+    button {
+      font-size: px-to-vw(35);
+      cursor: pointer;
+      padding: 1vw;
+      text-wrap: nowrap;
+      width: 40%;
+    }
+  }
+  .delete-btn {
+    svg {
+      width: 90%;
+    }
+  }
+}
+@media screen and (max-width: 950px) {
+  .option-btn {
+    font-size: px-to-vw(35);
+    padding: 1vw 1.5vw;
+    svg {
+      width: 1.8vw;
+    }
+  }
+  .page-header {
+    font-size: px-to-vw(50);
+  }
+  .meta-button {
+    height: 31%;
+    margin-left: 3.5vw;
+  }
+  .filter-dropdown {
+    width: 30vw;
+  }
+  .title-block {
+    label {
+      font-size: px-to-vw(40);
+    }
+  }
+  .label-track {
+    label {
+      font-size: px-to-vw(45);
+    }
+    .reset-btn {
+      font-size: px-to-vw(20);
+    }
+  }
+  .selection-track {
+    font-size: px-to-vw(30);
+  }
+  .search-input {
+    font-size: px-to-vw(35);
+  }
+  .submit-track {
+    button {
+      font-size: px-to-vw(35);
+      cursor: pointer;
+      padding: 1vw;
+      text-wrap: nowrap;
+      width: 40%;
+    }
+  }
+  .delete-btn {
+    svg {
+      width: 90%;
+    }
+  }
+}
+@media screen and (max-width: 550px) {
+  .option-btn {
+    font-size: px-to-vw(40);
+    padding: 1.5vw 1.75vw;
+    svg {
+      width: 2.5vw;
+    }
+  }
+  .page-header {
+    font-size: px-to-vw(70);
+  }
+  .meta-button {
+    height: 32%;
+    margin-left: 4vw;
+  }
+  .filter-dropdown {
+    width: 40vw;
+  }
+  .title-block {
+    label {
+      font-size: px-to-vw(60);
+    }
+  }
+  .label-track {
+    label {
+      font-size: px-to-vw(45);
+    }
+    .reset-btn {
+      font-size: px-to-vw(20);
+    }
+  }
+
+  .selection-track {
+    font-size: px-to-vw(35);
+  }
+  .search-input {
+    font-size: px-to-vw(40);
+  }
+  .submit-track {
+    button {
+      font-size: px-to-vw(40);
+      cursor: pointer;
+      padding: 1vw;
+      text-wrap: nowrap;
+      width: 35%;
+    }
+  }
+  .delete-btn {
+    svg {
+      width: 75%;
+    }
+  }
+}
+@media screen and (max-width: 1025px) {
+  .button-container {
+    button {
+      font-size: px-to-vw(50);
+      padding: 1vw 2vw;
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(60);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(40);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(35);
+    }
+  }
+}
+@media screen and (min-width: 1025px) {
+  .button-container {
+    button {
+      font-size: px-to-vw(15);
+      padding: 0.5vw 1.5vw;
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(40);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(15);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(17);
+    }
+  }
+}
+@media screen and (max-width: 950px) {
+  .button-container {
+    button {
+      font-size: px-to-vw(50);
+      padding: 1vw 2vw;
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(67.5);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(45);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(40);
+    }
+  }
+}
+@media screen and (max-width: 550px) {
+  .button-container {
+    button {
+      padding: 2vw 4vw;
+      font-size: px-to-vw(60);
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(80);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(50);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(50);
     }
   }
 }

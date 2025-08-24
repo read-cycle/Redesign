@@ -14,10 +14,10 @@ export default defineConfig({
     preprocessorOptions: {
       scss: {
         additionalData: (content, filename) => {
-          if (filename.replace(/\\/g, '/').endsWith('/main.scss')) {
+          if (filename.replace(/\\/g, '/').endsWith('/global.scss')) {
             return content;
           }
-          return `@use "@/styles/main.scss" as *;\n${content}`;
+          return `@use "@/styles/global.scss" as *;\n${content}`;
         }
       }
     }
