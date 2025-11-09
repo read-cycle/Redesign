@@ -294,8 +294,8 @@ watch(
     [newName, newDelivery, newContact, newQuantity],
     [oldName, oldDelivery, oldContact, oldQuantity]
   ) => {    
-    if (newName && !oldName) progresses.value[1] += 20;
-    if (!newName && oldName) progresses.value[1] -= 20;
+    if (newName && !oldName) progresses.value[1] += 100/3;
+    if (!newName && oldName) progresses.value[1] -= 100/3;
     
     if (newQuantity && !oldQuantity) progresses.value[1] += 100/3;
     if (!newQuantity && oldQuantity) progresses.value[1] -= 100/3;
