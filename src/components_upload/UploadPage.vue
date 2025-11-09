@@ -137,33 +137,74 @@ watch(selectedISBN, (newISBN) => {
   }
 
   const raw = newISBN?.code?.replace(/[-\s]/g, '');
-
+  
   if (ISBN.isValid(raw)) {
     const isbnObj = ISBN.parse(raw) as ISBN.ISBN;
     const isbn13 = isbnObj.asIsbn13();
     console.log('Valid ISBN:', isbn13);
-
-    fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn13}`)
+  
+    const googleURL = `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn13}`;
+    const openLibURL = `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn13}&jscmd=data&format=json`;
+  
+    fetch(googleURL)
       .then(res => res.json())
       .then(data => {
+        console.log("Google Books response:", data);
+      
         if (data.totalItems > 0) {
           const book = data.items[0].volumeInfo;
-
-          const title: string = book.title;
+          const title = book.title;
+        
           selectedTitle.value = {
             name: title,
             code: title.toLowerCase().replace(/\s+/g, '-')
           };
         } else {
-          console.log('No book found for this ISBN');
-          selectedTitle.value = null;
+          console.log("Google Books: No items found. Trying Open Library...");
+          return fetch(openLibURL)
+            .then(res => res.json())
+            .then(olData => {
+              console.log("Open Library response:", olData);
+            
+              const key = `ISBN:${isbn13}`;
+              if (olData[key]?.title) {
+                const title = olData[key].title;
+                selectedTitle.value = {
+                  name: title,
+                  code: title.toLowerCase().replace(/\s+/g, '-')
+                };
+              } else {
+                console.log("Open Library: No book found.");
+                selectedTitle.value = null;
+              }
+            });
         }
       })
       .catch(err => {
-        console.error('Error fetching from Google Books:', err);
-        selectedTitle.value = null;
+        console.error("Google Books error:", err);
+        console.log("Falling back to Open Library...");
+      
+        fetch(openLibURL)
+          .then(res => res.json())
+          .then(olData => {
+            const key = `ISBN:${isbn13}`;
+            if (olData[key]?.title) {
+              const title = olData[key].title;
+              selectedTitle.value = {
+                name: title,
+                code: title.toLowerCase().replace(/\s+/g, '-')
+              };
+            } else {
+              console.log("Open Library also failed.");
+              selectedTitle.value = null;
+            }
+          })
+          .catch(err => {
+            console.error("Both ISBN lookups failed:", err);
+            selectedTitle.value = null;
+          });
       });
-
+    
   } else {
     console.log('Invalid ISBN');
     selectedTitle.value = null;
