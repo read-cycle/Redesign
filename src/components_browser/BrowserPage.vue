@@ -3,27 +3,44 @@ import Sidebar from '../components/Sidebar.vue';
 import MetaBar from '../components/MetaBar.vue';
 import BrowserCard from './BrowserCard.vue';
 import Multiselect from 'vue-multiselect'
-import { computed, isRef, nextTick, onMounted, ref, watch, type ComputedRef, type Ref } from 'vue';
+import { computed, isRef, nextTick, onBeforeUnmount, onMounted, ref, watch, type ComputedRef, type Ref } from 'vue';
 import Datepicker from 'vue3-datepicker'
 import { addDoc, collection, deleteDoc, doc, DocumentReference, getDoc, getDocs, orderBy, query, setDoc } from "firebase/firestore";
 import { auth, db } from '../firebase-init';
-import { type BuyerRequestedDoc, type UploadDoc } from '../interfaces';
+import { type BuyerRequestedDoc, type CodeName, type UploadDoc } from '../interfaces';
 import bookSVG from '../assets/icons/book.svg'
 import infoSVG from '../assets/icons/info.svg'
 import checkSVG from '../assets/icons/check.svg'
-import AutocompletePhoton from '../components_upload/AutocompletePhoton.vue';
 import { onAuthStateChanged } from 'firebase/auth';
 import router from '../router';
 import success from '../assets/icons/check-big.svg?raw';
 import failure from '../assets/icons/circle-x.svg?raw';
 import { sendEmail } from '../sendEmail';
 import Navbar from '../components/Navbar.vue';
+import { isbnToSubject } from "BookMappings";
 
 let userID: string | null = null;
+let displayName: string | null = null;
 
-onAuthStateChanged(auth, (user) => {
+async function autofillUserData() {
+  if(!userID || !displayName) return
+
+  const snap = await getDoc(doc(db, "users", userID));
+
+  buyerName.value = displayName;
+
+  if(snap.exists()) {
+    const data = snap.data()
+    buyerContactPreference.value = data.contactPreferences;
+    buyerDeliveryPreference.value = data.deliveryPreferences;
+  }
+}
+
+onAuthStateChanged(auth, async(user) => {
   if (user) {
     userID = user.uid;
+    displayName = user.displayName;
+    await autofillUserData()
   } else {
     router.push('/login')
   }
@@ -35,20 +52,11 @@ const toDate = ref<Date | undefined>(undefined)
 const filterButtonRef = ref<HTMLElement | null>(null);
 const sortButtonRef = ref<HTMLElement | null>(null);
 
-const subjectOptions = [
-  'Math',
-  'Biology',
-  'Chemistry',
-  'Physics',
-  'Computer Science',
-  'History',
-  'Geography',
-  'Economics',
-  'English Literature'
-];
+const subjectOptions: Ref<CodeName[]> = ref(Array.from(new Set(Object.values(isbnToSubject))).map((val) => ({
+    name: val as string,
+    code: (val as string).toLowerCase().replace(/\s+/g, '-')})))
 
 const fieldOptions = [
-  'Subject',
   'Grade',
   'Date'
 ];
@@ -62,28 +70,58 @@ const sortOptions = [
 
 const selectedSort = ref();
 
+function applySort() {
+  if(selectedField.value == 'Grade') {
+    filteredDocs.value.sort((a, b) => {
+      const gradeA = a[1].grade ? parseInt(a[1].grade.code.slice(1)) : 0;
+      const gradeB = b[1].grade ? parseInt(b[1].grade.code.slice(1)) : 0;
+      if(selectedSort.value === 'Ascending') {
+        return gradeA - gradeB;
+      } else {
+        return gradeB - gradeA;
+      }
+    });
+  } else if (selectedField.value == 'Date') {
+    filteredDocs.value.sort((a, b) => {
+      const timeA = a[1].timestamp ? a[1].timestamp.toMillis() : 0;
+      const timeB = b[1].timestamp ? b[1].timestamp.toMillis() : 0;
 
-const selectedSubjects = ref([]);
+      if (selectedSort.value === 'Ascending') {
+        return timeA - timeB;
+      } else {
+        return timeB - timeA;
+      }
+    });
+  }
+}
 
-const gradeOptions = [
-  'Grade 1',
-  'Grade 2',
-  'Grade 3',
-  'Grade 4',
-  'Grade 5',
-  'Grade 6',
-  'Grade 7',
-  'Grade 8',
-  'Grade 9',
-  'Grade 10',
-  'Grade 11',
-  'Grade 12',
-];
+const gradeOptions: Ref<CodeName[]> = ref([
+  { code: 'g1', name: 'Grade 1' },
+  { code: 'g2', name: 'Grade 2' },
+  { code: 'g3', name: 'Grade 3' },
+  { code: 'g4', name: 'Grade 4' },
+  { code: 'g5', name: 'Grade 5' },
+  { code: 'g6', name: 'Grade 6' },
+  { code: 'g7', name: 'Grade 7' },
+  { code: 'g8', name: 'Grade 8' },
+  { code: 'g9', name: 'Grade 9' },
+  { code: 'g10', name: 'Grade 10' },
+  { code: 'g11', name: 'Grade 11' },
+  { code: 'g12', name: 'Grade 12' },
+]);
 
-const selectedGrades = ref([]);
+const selectedGrades: Ref<CodeName[]> = ref([]);
 
-const tagOptions = ['Cambridge', 'IGCSE', 'NCERT', '2023 Edition', 'Used', 'New'];
-const selectedTags = ref([]);
+const selectedISBNs: Ref<CodeName[]> = ref([]);
+
+const selectedSubjects: Ref<CodeName[]> = ref([]);
+
+let tagOptions: Ref<{name: string, code: string}[]> = ref([
+  { name: 'Ex1 Thing', code: 'ex1-thing' },
+  { name: 'Ex2 Thing', code: 'ex2-thing' },
+  { name: 'Ex3 Thing', code: 'ex3-thing' }
+]);
+const selectedTags: Ref<CodeName[]> = ref([]);
 
 const searchQuery = ref('');
 
@@ -102,19 +140,20 @@ const docsData: Ref<[DocumentReference, UploadDoc][]> = ref([]);
 
 const cards = ref<HTMLElement[]>([]);
 
+const filteredDocs: Ref<[DocumentReference, UploadDoc][]> = ref([]);
+
 getDocs(uploadDocs).then((result) => {
   docsData.value = result.docs.map((doc) => {
     const data = doc.data() as UploadDoc;
     return [doc.ref, { id: doc.id, ...data }] as [DocumentReference, UploadDoc];
   });
+  filteredDocs.value = [...docsData.value]
 
   nextTick(() => {
     cards.value = Array.from(document.querySelectorAll('.browsercard-container'));
     console.log(cards.value);
   });
 });
-
-const filteredDocs = docsData;
 
 const toggleModal = ref(false);
 const currentDocRef: Ref<DocumentReference | undefined> = ref(filteredDocs?.value?.[1]?.[0]);
@@ -135,7 +174,6 @@ watch(toggleModal, (newState, oldState) => {
   if(newState && !oldState) {
     currentImageIndex.value = 0;
     activeSlide.value = 1;
-    progresses.value = [100, 0]
   }
 })
 
@@ -152,7 +190,71 @@ function nextImage() {
     currentImageIndex.value++
   }
 }
+function useTeleportDropdown(el: HTMLElement) {
+  let dropdown: HTMLElement | null = null
+  const observer = new MutationObserver(() => {
+    const found = el.querySelector(".multiselect__content-wrapper") as HTMLElement
+    if (found && found !== dropdown) {
+      dropdown = found
+      document.body.appendChild(dropdown)
+      positionDropdown()
+    }
+  })
 
+  const positionDropdown = () => {
+    if (!dropdown) return
+    const rect = el.getBoundingClientRect()
+    dropdown.style.position = "absolute"
+    dropdown.style.top = rect.bottom + "px"
+    dropdown.style.left = rect.left + "px"
+    dropdown.style.width = rect.width + "px"
+    dropdown.style.zIndex = "9999"
+  }
+
+  const cleanup = () => {
+    observer.disconnect()
+    if (dropdown) dropdown.remove()
+  }
+
+  observer.observe(el, { childList: true, subtree: true })
+  window.addEventListener("resize", positionDropdown)
+  window.addEventListener("scroll", positionDropdown, true)
+
+  return cleanup
+}
+onMounted(() => {
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node instanceof HTMLElement && node.classList.contains("multiselect")) {
+          console.log("NEW MULTISELECT: ", node)
+          const cleanup = useTeleportDropdown(node)
+          onBeforeUnmount(cleanup)
+        }
+        // also check children of added node
+        if (node instanceof HTMLElement) {
+          node.querySelectorAll(".multiselect").forEach(el => {
+            console.log("NEW MULTISELECT (child): ", el)
+            const cleanup = useTeleportDropdown(el as HTMLElement)
+            onBeforeUnmount(cleanup)
+          })
+        }
+      })
+    })
+  })
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  })
+
+  document.querySelectorAll(".multiselect").forEach(el => {
+    const cleanup = useTeleportDropdown(el as HTMLElement)
+    onBeforeUnmount(cleanup)
+  })
+
+  onBeforeUnmount(() => observer.disconnect())
+})
 const activeSlide = ref(1);
 
 const slideIcons = [bookSVG, infoSVG, checkSVG]
@@ -166,63 +268,43 @@ const buyerContactPreference: Ref<{name: string, code: string}[]> = ref([])
 const deliveryPreferenceOptions = [{ name: 'Meetup', code: 'meetup' }, { name: 'Delivery', code: 'delivery' }]
 const buyerDeliveryPreference: Ref<{name: string, code: string}[]> = ref([])
 
-const buyerName = ref('')
+const buyerName = ref('');
 
-const shareBuyerLocation = ref(true)
-const buyerLocation = ref('')
+const buyerQuantity = ref(1);
 
-const buyerQuantity = ref(1)
-onMounted(() => {
 watch(
-  [buyerName, buyerDeliveryPreference, buyerContactPreference, shareBuyerLocation, buyerLocation, buyerQuantity],
+  [buyerName, buyerDeliveryPreference, buyerContactPreference, buyerQuantity],
   (
-    [newName, newDelivery, newContact, newShareLoc, newLocation, newQuantity],
-    [oldName, oldDelivery, oldContact, oldShareLoc, oldLocation, oldQuantity]
+    [newName, newDelivery, newContact, newQuantity],
+    [oldName, oldDelivery, oldContact, oldQuantity]
   ) => {    
-    let delta = 0;
-
-    if (newName && !oldName) delta += 20;
-    if (!newName && oldName) delta -= 20;
+    if (newName && !oldName) progresses.value[1] += 20;
+    if (!newName && oldName) progresses.value[1] -= 20;
     
-    if (newQuantity && !oldQuantity) delta += 20;
-    if (!newQuantity && oldQuantity) delta -= 20;
-    
-    if(newShareLoc && !oldShareLoc) delta -= 40;
-    if(!newShareLoc && oldShareLoc) delta += 40;
-    
-    if (newLocation && !oldLocation) delta += 40;
-    if (!newLocation && oldLocation) delta -= 40;
+    if (newQuantity && !oldQuantity) progresses.value[1] += 100/3;
+    if (!newQuantity && oldQuantity) progresses.value[1] -= 100/3;
     
     const newContactPreferenceLen = Array.isArray(newContact) ? newContact.length : 0;
     const oldContactPreferenceLen = Array.isArray(oldContact) ? oldContact.length : 0;
     
-    if (newContactPreferenceLen > 0 && oldContactPreferenceLen === 0) delta += 20;
-    if (newContactPreferenceLen === 0 && oldContactPreferenceLen > 0) delta -= 20;
+    if (newContactPreferenceLen > 0 && oldContactPreferenceLen === 0) progresses.value[1] += 100/3;
+    if (newContactPreferenceLen === 0 && oldContactPreferenceLen > 0) progresses.value[1] -= 100/3;
     
     const newDeliveryLen = newDelivery.length;
     const oldDeliveryLen = oldDelivery.length;
     
-    if (newDeliveryLen > 0 && oldDeliveryLen === 0) delta += 20;
-    if (newDeliveryLen === 0 && oldDeliveryLen > 0) delta -= 20;
+    if (newDeliveryLen > 0 && oldDeliveryLen === 0) progresses.value[1] += 100/3;
+    if (newDeliveryLen === 0 && oldDeliveryLen > 0) progresses.value[1] -= 100/3;
     
-    updateProgress(delta);
-
-    console.log(progresses.value)
-    })
-})
-
-function updateProgress(delta: number) {
-  progresses.value[activeSlide.value - 1] = Math.min(100, Math.max(0, progresses.value[activeSlide.value - 1] + delta))
-}
-
-watch(shareBuyerLocation, (newVal) => {
-  if (!newVal) {
-    buyerLocation.value = ''
-  }
+    console.log("PROGRESSES: ", progresses.value);
 })
 
 async function nextSlide() {
   if(progresses.value[activeSlide.value - 1] >= progressThresholds[activeSlide.value - 1]) {
+    console.log("ACTIVESLIDE: ", activeSlide.value);
+    setTimeout(() => {
+      activeSlide.value++;
+    }, 375);
     if(activeSlide.value == slides.length) {
         if (!currentDocRef.value) {
           console.error("No document reference found in currentDocRef");
@@ -245,8 +327,6 @@ async function nextSlide() {
             buyerName: buyerName.value,
             buyerContactPreference: buyerContactPreference.value,
             buyerDeliveryPreference: buyerDeliveryPreference.value,
-            shareBuyerLocation: shareBuyerLocation.value,
-            buyerLocation: buyerLocation.value,
             buyerQuantity: buyerQuantity.value,
             buyerID: userID
           });
@@ -258,16 +338,16 @@ async function nextSlide() {
           console.error("Error moving document:", err);
         }
     }
-    setTimeout(() => {
-      activeSlide.value++;
-    }, 375);
   } else {
-    window.alert("Please fill in all required fields.")
+    window.alert("Please fill in all required fields.");
+    console.log("ERROR PROGRESSES: ", progresses.value)
   }
 }
+
 function getText(dataComp: { props: any }) {
   return (dataComp.props as { text: ComputedRef<string> }).text.value;
 }
+
 const slides = [
   {
     header: computed(() => currentCardData.value?.title?.name || 'Confirmation'),
@@ -346,15 +426,8 @@ const slides = [
         ]
       },
       {
-        label: 'Location & Delivery',
+        label: 'Delivery',
         data: [
-          {
-            component: 'p',
-            props: {
-              text: computed(() => `Location: ${currentCardData.value?.userLocation || 'Not shared'}`),
-              class: 'confirmation-field'
-            }
-          },
           {
             component: 'p',
             props: {
@@ -412,42 +485,6 @@ const slides = [
               type: 'text',
               placeholder: 'Enter your name',
               class: 'form-input'
-            }
-          }
-        ]
-      },
-      {
-        label: 'Your Location',
-        data: [
-          {
-            component: AutocompletePhoton,
-            props: {
-              modelValue: buyerLocation,
-              'onUpdate:modelValue': (val: string) => buyerLocation.value = val,
-              disabled: computed(() => !shareBuyerLocation.value)
-            }
-          }
-        ]
-      },
-      {
-        label: 'Share Location?',
-        data: [
-          {
-            component: 'input',
-            props: {
-              type: 'checkbox',
-              checked: shareBuyerLocation,
-              onInput: (e: Event) => shareBuyerLocation.value = (e.target as HTMLInputElement).checked,
-              class: 'share-location-checkbox',
-              id: 'share-buyer-location-checkbox'
-            }
-          },
-          {
-            component: 'label',
-            props: {
-              innerHTML: 'Allow seller to view your location for delivery/pickup.',
-              class: 'share-location-text',
-              for: 'share-buyer-location-checkbox'
             }
           }
         ]
@@ -513,6 +550,7 @@ const slides = [
     ]
   }
 ];
+
 function deepUnref(obj: any): any {
   if (isRef(obj)) {
     return obj.value
@@ -537,6 +575,8 @@ const selectedNotif: Ref<[DocumentReference, BuyerRequestedDoc] | null> = ref(nu
 function openModal(item: [DocumentReference, BuyerRequestedDoc]) {
   selectedNotif.value = item;
   toggleConfirmationModal.value = true;
+  window.scrollY = 0;
+  document.body.style.overflow = "hidden";
 }
 
 const possibleStates = [
@@ -563,6 +603,55 @@ async function acceptRequest() {
   }
 }
 
+function applyFilters() {
+  filteredDocs.value = docsData.value.filter(([_, doc]) => {
+
+    console.log("CHECKING")
+
+    if (selectedTags.value.length >= 1) {
+      if (!doc.tags || !selectedTags.value.every(sel => doc.tags.some(tag => tag.code === sel.code))) {
+        return false;
+      }
+    }
+
+    console.log("PASSED TAGS", selectedTags.value)
+
+    if (selectedGrades.value.length >= 1) {
+      if (!doc.grade || !selectedGrades.value.some(g => g.code === doc.grade?.code)) {
+        console.log('Selected grades:', selectedGrades.value.map(g => g.code));
+        console.log('Doc grade:', doc.grade?.code);
+        return false;
+      }
+    }
+
+    console.log("PASSED GRADES", selectedGrades.value)
+
+    if (selectedISBNs.value.length >= 1) {
+      if (!doc.isbn || !selectedISBNs.value.some(i => i.code === doc.isbn?.code)) {
+        return false;
+      }
+    }
+
+    console.log("PASSED ISBNS", selectedISBNs.value)
+
+    if (selectedSubjects.value.length >= 1) {
+      if (!doc.subject || !selectedSubjects.value.some(s => s.code === doc.subject?.code)) {
+        return false;
+      }
+    }
+
+    console.log("PASSED SUBJECTS", selectedSubjects.value)
+
+    const docTime = doc.timestamp.toMillis();
+    if (fromDate.value && docTime < fromDate.value.getTime()) return false;
+    if (toDate.value && docTime > toDate.value.getTime()) return false;
+
+    console.log("PASSED TIMES")
+
+    return true;
+  });
+};
+
 async function denyRequest() {
   if (!selectedNotif.value) return;
 
@@ -576,7 +665,79 @@ async function denyRequest() {
     console.error("Error denying request:", err);
   }
 }
-const windowWidth = ref(window.innerWidth)
+function addItem<T extends object>(
+  newItem: T,
+  options: Ref<T[]> | T[],
+  selected: Ref<T[] | T | null | undefined> | T[] | T,
+  multiple: boolean
+) {
+  const getArray = (val: Ref<T[]> | T[]) => ('value' in val ? val.value : val)
+
+  const optionsArr = getArray(options)
+  const exists = optionsArr.some(opt => JSON.stringify(opt) === JSON.stringify(newItem))
+  if (!exists) optionsArr.push(newItem)
+
+  if ('value' in selected) {
+    if (multiple) {
+      if (!Array.isArray(selected.value)) selected.value = selected.value != null ? [selected.value] : []
+      selected.value.push(newItem)
+    } else {
+      selected.value = newItem
+    }
+  } else {
+    if (multiple) {
+      if (!Array.isArray(selected)) throw new Error("Expected selected to be an array for multiple=true")
+      selected.push(newItem)
+    } else {
+      selected = newItem as any
+    }
+  }
+}
+
+function openBrowserCardModal() {
+  toggleModal.value = !toggleModal.value;
+  window.scrollY = 0;
+  document.body.style.overflow = "hidden";
+}
+
+function closeBrowserCardModal() {
+  toggleModal.value = false;
+  document.body.style.overflow = "auto";
+  document.body.style.overflowX = "hidden";
+}
+
+function closeModal() {
+  toggleConfirmationModal.value = false;
+  document.body.style.overflow = "auto";
+  document.body.style.overflowX = "hidden";
+}
+
+const windowWidth = ref(window.innerWidth);
+
+watch(searchQuery, (newQuery) => {
+  const query = newQuery.toLowerCase().trim();
+
+  applyFilters()
+
+  filteredDocs.value = filteredDocs.value.filter(doc => {
+    const title = doc[1].title?.name.toLowerCase() || "";
+    const gradeName = doc[1].grade?.name?.toLowerCase() || "";
+    const tags = doc[1].tags?.map(t => t.name.toLowerCase()) || [];
+
+    console.log(doc, (
+      title.includes(query) ||
+      gradeName.includes(query) ||
+      tags.some(tag => tag.includes(query))
+    ))
+
+    return (
+      title.includes(query) ||
+      gradeName.includes(query) ||
+      tags.some(tag => tag.includes(query))
+    );
+  });
+});
+
 </script>
 <template>
     <Sidebar class="sidebar"></Sidebar>
@@ -614,7 +775,7 @@ const windowWidth = ref(window.innerWidth)
                 <div class="filter-block">
                   <div class="label-track">
                     <label>Subject</label>
-                    <label class="reset-btn">Reset</label>
+                    <label class="reset-btn" @click="selectedSubjects = []">Reset</label>
                   </div>
                   <div class="selection-track">
                     <Multiselect 
@@ -631,8 +792,8 @@ const windowWidth = ref(window.innerWidth)
                 </div>
                 <div class="filter-block">
                   <div class="label-track">
-                    <label>Grade</label>
-                    <label class="reset-btn">Reset</label>
+                    <label>ISBN</label>
+                    <label class="reset-btn" @click="selectedISBNs = []; applyFilters()">Reset</label>
                   </div>
                   <div class="selection-track">
                     <Multiselect 
@@ -644,13 +805,41 @@ const windowWidth = ref(window.innerWidth)
                       mode="tags"
                       placeholder="Filter Grades" 
                       class="multiselect tag-multiselect"
+                      label="name"
+                      trackBy="code"
+                      @tag="(newTag: string) => {
+                        const tagObj = {
+                          name: newTag,
+                          code: newTag.replace(/[\s-]/g, '')
+                        }
+                        addItem(tagObj, gradeOptions, selectedGrades, true)
+                      }"
+                    /> 
+                  </div>
+                </div>
+                <div class="filter-block">
+                  <div class="label-track">
+                    <label>Grade</label>
+                    <label class="reset-btn" @click="selectedGrades = []; applyFilters()">Reset</label>
+                  </div>
+                  <div class="selection-track">
+                    <Multiselect 
+                      v-model="selectedGrades" 
+                      :options="gradeOptions" 
+                      :multiple="true"
+                      :searchable="true"
+                      mode="tags"
+                      placeholder="Filter Grades" 
+                      class="multiselect tag-multiselect"
+                      label="name"
+                      trackBy="code"
                     /> 
                   </div>
                 </div>
                 <div class="filter-block">
                   <div class="label-track">
                     <label>Date</label>
-                    <label class="reset-btn">Reset</label>
+                    <label class="reset-btn" @click="fromDate = undefined; toDate = undefined; applyFilters()">Reset</label>
                   </div>
                   <div class="selection-track date-selection-track">
                     <Datepicker v-model="fromDate" placeholder="From date" :maxDate="today"/>
@@ -660,7 +849,7 @@ const windowWidth = ref(window.innerWidth)
                 <div class="filter-block">
                   <div class="label-track">
                     <label>Tags</label>
-                    <label class="reset-btn">Reset</label>
+                    <label class="reset-btn" @click="selectedTags = []; applyFilters()">Reset</label>
                   </div>
                   <div class="selection-track">
                     <Multiselect 
@@ -672,13 +861,22 @@ const windowWidth = ref(window.innerWidth)
                       mode="tags"
                       placeholder="Filter Tags" 
                       class="multiselect tag-multiselect"
+                      label="name"
+                      trackBy="code"
+                      @tag="(newTag: string) => {
+                        const tagObj = {
+                          name: newTag,
+                          code: newTag.replace(/[\s-]/g, '')
+                        }
+                        addItem(tagObj, tagOptions, selectedTags, true)
+                      }"
                     /> 
                   </div>
                 </div>
                 <div class="filter-block submit-block">
                   <div class="label-track submit-track">
-                    <button class="delete-btn"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash2-icon lucide-trash-2"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Clear All</button>
-                    <button class="apply-btn">Apply All</button>
+                    <button class="delete-btn" @click="selectedTags = []; fromDate = undefined; toDate = undefined; selectedGrades = []; selectedSubjects = []; applyFilters()"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash2-icon lucide-trash-2"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Clear All</button>
+                    <button class="apply-btn" @click="applyFilters()">Apply All</button>
                   </div>
                 </div>
               </div>
@@ -689,7 +887,7 @@ const windowWidth = ref(window.innerWidth)
                 <div class="filter-block">
                   <div class="label-track">
                     <label>Sort By</label>
-                    <label class="reset-btn">Reset</label>
+                    <label class="reset-btn" @click="selectedField = null; applySort()">Reset</label>
                   </div>
                   <div class="selection-track">
                     <Multiselect 
@@ -704,7 +902,7 @@ const windowWidth = ref(window.innerWidth)
                 <div class="filter-block">
                   <div class="label-track">
                     <label>Type</label>
-                    <label class="reset-btn">Reset</label>
+                    <label class="reset-btn" @click="selectedSort = null; applySort()">Reset</label>
                   </div>
                   <div class="selection-track">
                     <Multiselect 
@@ -718,8 +916,8 @@ const windowWidth = ref(window.innerWidth)
                 </div>
                 <div class="filter-block submit-block">
                   <div class="label-track submit-track">
-                    <button class="delete-btn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash2-icon lucide-trash-2"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Clear All</button>
-                    <button class="apply-btn">Apply All</button>
+                    <button class="delete-btn" @click="selectedField = null; selectedSort = null; applySort()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash2-icon lucide-trash-2"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Clear All</button>
+                    <button class="apply-btn" @click="applySort()">Apply All</button>
                   </div>
                 </div>
               </div>
@@ -727,12 +925,12 @@ const windowWidth = ref(window.innerWidth)
           </div>
         </div>
         <div class = "grid-container">
-            <BrowserCard v-for="docData in filteredDocs" :data="docData[1]" @click="toggleModal = !toggleModal; currentCardData = docData[1]; currentDocRef = docData[0]"></BrowserCard>
+            <BrowserCard v-for="docData in filteredDocs" :data="docData[1]" @click="currentCardData = docData[1]; currentDocRef = docData[0]; openBrowserCardModal()"></BrowserCard>
         </div>
     </div>
     <div class="modal-book-expanded-container" v-if="toggleModal">
       <div class="modal-book-expanded-content">
-        <div class="close-btn" @click="toggleModal = false"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
+        <div class="close-btn" @click="closeBrowserCardModal()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
         <div class="progress-container">
           <div class="slide-number-container">
               <p class="slide-number" :key="activeSlide">
@@ -817,7 +1015,7 @@ const windowWidth = ref(window.innerWidth)
                 <div class="btn-container" v-if="activeSlide !== 3"><button class="proceed-btn" @click="nextSlide()">Proceed</button></div>
               </div>
             </div>
-            <div class="images-half" v-if="activeSlide === 1 || (activeSlide == 2 && windowWidth > 1280)">
+            <div class="images-half" v-if="activeSlide === 1 || (activeSlide == 2 && windowWidth > 1025)">
               <div class="images-carousel" v-if="activeSlide === 1">
                 <div class="images-wrapper">
                   <transition :name="`fade-slide-${direction}`" mode="out-in">
@@ -846,7 +1044,7 @@ const windowWidth = ref(window.innerWidth)
     </div>
     <div class="modal-confirmation-container" v-if="toggleConfirmationModal">
       <div class="modal-confirmation-content">
-        <div class="close-btn" @click="toggleConfirmationModal = false"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
+        <div class="close-btn" @click="closeModal()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
         <div class="text-half">
           <h1 class="confirm-header">Your book has been requested!</h1>
           <div class="book-metadata">
@@ -855,7 +1053,6 @@ const windowWidth = ref(window.innerWidth)
           </div>
           <div class="requester-data">
             <p><b>Requester Name:</b> {{ selectedNotif?.[1]?.buyerName }}</p>
-            <p><b>Requester Location:</b> {{ selectedNotif?.[1].shareBuyerLocation ? selectedNotif?.[1].buyerLocation : "Not Shared" }}</p>
             <p><b>Requester Contact Preference:</b> {{ selectedNotif?.[1].buyerContactPreference.map(x => x.name).join(', ') }}</p>
             <p><b>Requester Delivery Preference:</b> {{ selectedNotif?.[1].buyerDeliveryPreference.map(x => x.name).join(', ') }}</p>
             <p><b>Quantity Requested:</b> {{ selectedNotif?.[1].buyerQuantity }}</p>
@@ -939,6 +1136,7 @@ const windowWidth = ref(window.innerWidth)
   grid-template-rows: repeat(20, 1fr);
   position: relative;
   padding-left: 5vw;
+  min-height: 0;
   .metabar-container {
     grid-row: 1/3;
     grid-column: 4 / 18;
@@ -947,9 +1145,12 @@ const windowWidth = ref(window.innerWidth)
     grid-row: 5/20;
     grid-column: 4/18;
     display: grid;
-    grid-template-rows: repeat(36, 1fr);
-    grid-template-columns: repeat(auto-fill, minmax(240px, 5fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+    grid-auto-rows: 282px;
     gap: 1rem;
+    overflow-y: scroll;
+    min-height: 0;
+    place-items: center;
   }
 }
 .filters-bar {
@@ -1083,7 +1284,8 @@ const windowWidth = ref(window.innerWidth)
   top: 0;
   left: 0;
   background-color: rgba(0, 0, 0, 0.75);
-  @extend %filler;
+  width: 100%;
+  height: 100vh;
   @extend %centered;
   z-index: 9999;
   .modal-book-expanded-content {
@@ -1153,11 +1355,9 @@ const windowWidth = ref(window.innerWidth)
           width: 100%;
           h1 {
             font-family: 'Manrope';
-            font-size: px-to-vw(40);
           }
           p {
             font-family: 'Nunito';
-            font-size: px-to-vw(15);
             font-weight: 600;
           }
         }
@@ -1167,18 +1367,12 @@ const windowWidth = ref(window.innerWidth)
           height: 15%;
           @extend %centered;
           .proceed-btn {
-            height: 75%;
-            aspect-ratio: 4/1;
             font-family: 'Nunito';
             border-radius: 14px;
             background: linear-gradient(to right, $color-secondary, $color-secondary-lightened);
-            font-size: px-to-vw(20);
             cursor: pointer;
-            border: 4px solid $color-background;
-            transition: box-shadow 0.4s ease;
-            &:hover {
-                box-shadow: 0 0 0 4px $color-primary;
-            }
+            border: none;
+            outline: none;
           }    
         }
       }
@@ -1305,7 +1499,6 @@ const windowWidth = ref(window.innerWidth)
   .section-label {
     font-family: 'Nunito';
     font-weight: 600;
-    font-size: px-to-vw(20);
   }
   p {
     font-family: 'Nunito';
@@ -1330,10 +1523,10 @@ input[type="checkbox"] {
   -webkit-appearance: none;
   -moz-appearance: none;
   
-  width: 18px;
-  height: 18px;
+  width: px-to-vw(18);
+  height: px-to-vw(18);
   border: 2px solid #999;
-  border-radius: 4px;
+  border-radius:  px-to-vw(4);
   cursor: pointer;
   position: relative;
   transition: background 0.2s ease;
@@ -1344,16 +1537,18 @@ input[type="checkbox"]:checked {
   border-color: transparent;
 }
 
+
 input[type="checkbox"]:checked::after {
   content: "";
   position: absolute;
-  top: 1px;
-  left: 4.5px;
-  width: 4px;
-  height: 8px;
+  top: 40%;
+  left: 50%;
+  width: 40%;
+  height: 80%;
   border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+  border-width: 0 0.2vw 0.2vw 0;
+  border-radius: 2px;
+  transform: translate(-50%, -50%) rotate(45deg);
 }
 .form-input {
   width: 100%;
@@ -1361,17 +1556,13 @@ input[type="checkbox"]:checked::after {
   border-radius: 20px;
   border: 1px solid lightgray;
 }
-.share-location-text {
-  font-family: 'Nunito';
-  margin-left: 10px;
-}
 .close-btn {
   position: absolute;
-  top: px-to-vw(20);
-  right: px-to-vw(20);
+  top: 1.25%;
+  right: 2%;
   cursor: pointer;
   z-index: 999;
-  width: px-to-vw(50);
+  width: 40px;
   aspect-ratio: 1/1;
   @extend %centered;
   svg {
@@ -1384,7 +1575,8 @@ input[type="checkbox"]:checked::after {
   top: 0;
   left: 0;
   background-color: rgba(0, 0, 0, 0.75);
-  @extend %filler;
+  width: 100%;
+  height: 100vh;
   @extend %centered;
   z-index: 9999;
   .modal-confirmation-content {
@@ -1491,6 +1683,28 @@ input[type="checkbox"]:checked::after {
     padding: 0.5vw 0.75vw;
     svg {
       width: 1vw;
+    }
+  }
+  .header-wrapper {
+    h1 {
+      font-size: px-to-vw(40);
+    }
+    p {
+      font-size: px-to-vw(15);
+    }
+  }
+  .btn-container {
+    .proceed-btn {
+      padding: 0.5vw 1vw;
+      font-size: px-to-vw(20);
+    }
+  }
+  .form-section {
+    .section-label {
+      font-size: px-to-vw(20);
+    }
+    p {
+      font-size: px-to-vw(15);
     }
   }
   .image-half {
@@ -1606,6 +1820,12 @@ input[type="checkbox"]:checked::after {
       width: 90%;
     }
   }
+  .btn-container {
+    .proceed-btn {
+      padding: 1vw 2vw;
+      font-size: px-to-vw(40);
+    }
+  }
 }
 @media screen and (max-width: 950px) {
   .option-btn {
@@ -1613,6 +1833,12 @@ input[type="checkbox"]:checked::after {
     padding: 1vw 1.5vw;
     svg {
       width: 1.8vw;
+    }
+  }
+  .btn-container {
+    .proceed-btn {
+      padding: 1vw 2vw;
+      font-size: px-to-vw(40);
     }
   }
   .page-header {
@@ -1669,6 +1895,28 @@ input[type="checkbox"]:checked::after {
   }
   .page-header {
     font-size: px-to-vw(70);
+  }
+  .header-wrapper {
+    h1 {
+      font-size: px-to-vw(90);
+    }
+    p {
+      font-size: px-to-vw(50);
+    }
+  }
+  .btn-container {
+    .proceed-btn {
+        padding: 1.5vw 3vw;
+        font-size: px-to-vw(50);
+      }
+    }
+  .form-section {
+    .section-label {
+      font-size: px-to-vw(60);
+    }
+    p {
+      font-size: px-to-vw(30);
+    }
   }
   .meta-button {
     height: 32%;

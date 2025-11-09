@@ -10,6 +10,7 @@ export interface UploadDoc {
   isbn: CodeName | null;
   title: CodeName | null;
   grade: CodeName | null;
+  subject: CodeName | null;
   tags: CodeName[];
   condition: CodeName | null;
   priceMode: CodeName | null;

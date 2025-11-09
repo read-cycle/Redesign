@@ -6,7 +6,7 @@ import MetaBar from '../components/MetaBar.vue';
 import StatOption from './StatOption.vue';
 const icons = ['<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock-icon lucide-clock"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="10"/></svg>', '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-binoculars-icon lucide-binoculars"><path d="M10 10h4"/><path d="M19 7V4a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v3"/><path d="M20 21a2 2 0 0 0 2-2v-3.851c0-1.39-2-2.962-2-4.829V8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v11a2 2 0 0 0 2 2z"/><path d="M 22 16 L 2 16"/><path d="M4 21a2 2 0 0 1-2-2v-3.851c0-1.39 2-2.962 2-4.829V8a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v11a2 2 0 0 1-2 2z"/><path d="M9 7V4a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v3"/></svg>', '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload-icon lucide-upload"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>']
 const tableIcons = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-user-icon lucide-book-user"><path d="M15 13a3 3 0 1 0-6 0"/><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/><circle cx="12" cy="8" r="2"/></svg>', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-binoculars-icon lucide-binoculars"><path d="M10 10h4"/><path d="M19 7V4a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v3"/><path d="M20 21a2 2 0 0 0 2-2v-3.851c0-1.39-2-2.962-2-4.829V8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v11a2 2 0 0 0 2 2z"/><path d="M 22 16 L 2 16"/><path d="M4 21a2 2 0 0 1-2-2v-3.851c0-1.39 2-2.962 2-4.829V8a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v11a2 2 0 0 1-2 2z"/><path d="M9 7V4a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v3"/></svg>']
-import { computed, isRef, onMounted, ref, watch, type Ref } from 'vue';
+import { isRef, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
 import type { BuyerRequestedDoc, UploadDoc } from '../interfaces';
 import { addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, serverTimestamp, setDoc, where, type DocumentReference } from 'firebase/firestore';
 import success from '../assets/icons/check-big.svg?raw';
@@ -17,7 +17,6 @@ import router from '../router';
 import bookSVG from '../assets/icons/book.svg'
 import infoSVG from '../assets/icons/info.svg'
 import checkSVG from '../assets/icons/check.svg'
-import AutocompletePhoton from '../components_upload/AutocompletePhoton.vue';
 import Multiselect from 'vue-multiselect';
 import ISBN from 'isbn-utils';
 import Navbar from '../components/Navbar.vue';
@@ -83,13 +82,16 @@ const selectedNotif: Ref<[DocumentReference, BuyerRequestedDoc] | null> = ref(nu
 function openModal(item: [DocumentReference, BuyerRequestedDoc]) {
   selectedNotif.value = item;
   toggleModal.value = true;
+  window.scrollY = 0;
+  document.body.style.overflow = "hidden";
 }
 
 const toggleWatchlistModal = ref(false);
 
 function openWatchlistModal() {
   toggleWatchlistModal.value = true;
-  console.log("WATCHLIST MODAL OPENING")
+  window.scrollY = 0;
+  document.body.style.overflow = "hidden";
 }
 
 const possibleStates = [
@@ -142,9 +144,6 @@ const deliveryPreferenceOptions = [{ name: 'Meetup', code: 'meetup' }, { name: '
 const buyerDeliveryPreference: Ref<{name: string, code: string}[]> = ref([])
 
 const buyerName = ref('')
-
-const shareBuyerLocation = ref(true)
-const buyerLocation = ref('')
 
 const buyerQuantity = ref(1)
 
@@ -394,42 +393,6 @@ const slides = [
         ]
       },
       {
-        label: 'Your Location',
-        data: [
-          {
-            component: AutocompletePhoton,
-            props: {
-              modelValue: buyerLocation,
-              'onUpdate:modelValue': (val: string) => buyerLocation.value = val,
-              disabled: computed(() => !shareBuyerLocation.value)
-            }
-          }
-        ]
-      },
-      {
-        label: 'Share Location?',
-        data: [
-          {
-            component: 'input',
-            props: {
-              type: 'checkbox',
-              checked: shareBuyerLocation,
-              onInput: (e: Event) => shareBuyerLocation.value = (e.target as HTMLInputElement).checked,
-              class: 'share-location-checkbox',
-              id: 'share-buyer-location-checkbox'
-            }
-          },
-          {
-            component: 'label',
-            props: {
-              innerHTML: 'Allow seller to view your location for delivery/pickup.',
-              class: 'share-location-text',
-              for: 'share-buyer-location-checkbox'
-            }
-          }
-        ]
-      },
-      {
         label: 'Quantity',
         data: [
           {
@@ -526,8 +489,6 @@ async function nextSlide() {
           buyerName: buyerName.value,
           buyerContactPreference: buyerContactPreference.value,
           buyerDeliveryPreference: buyerDeliveryPreference.value,
-          shareBuyerLocation: shareBuyerLocation.value,
-          buyerLocation: buyerLocation.value,
           buyerQuantity: buyerQuantity.value,
           buyerID: userID,
           title: selectedTitle.value,
@@ -547,13 +508,76 @@ async function nextSlide() {
     window.alert("Please fill in all required fields.")
   }
 }
+function useTeleportDropdown(el: HTMLElement) {
+  let dropdown: HTMLElement | null = null
+  const observer = new MutationObserver(() => {
+    const found = el.querySelector(".multiselect__content-wrapper") as HTMLElement
+    if (found && found !== dropdown) {
+      dropdown = found
+      document.body.appendChild(dropdown)
+      positionDropdown()
+    }
+  })
 
+  const positionDropdown = () => {
+    if (!dropdown) return
+    const rect = el.getBoundingClientRect()
+    dropdown.style.position = "absolute"
+    dropdown.style.top = rect.bottom + "px"
+    dropdown.style.left = rect.left + "px"
+    dropdown.style.width = rect.width + "px"
+    dropdown.style.zIndex = "9999"
+  }
+
+  const cleanup = () => {
+    observer.disconnect()
+    if (dropdown) dropdown.remove()
+  }
+
+  observer.observe(el, { childList: true, subtree: true })
+  window.addEventListener("resize", positionDropdown)
+  window.addEventListener("scroll", positionDropdown, true)
+
+  return cleanup
+}
+onMounted(() => {
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node instanceof HTMLElement && node.classList.contains("multiselect")) {
+          console.log("NEW MULTISELECT: ", node)
+          const cleanup = useTeleportDropdown(node)
+          onBeforeUnmount(cleanup)
+        }
+        if (node instanceof HTMLElement) {
+          node.querySelectorAll(".multiselect").forEach(el => {
+            console.log("NEW MULTISELECT (child): ", el)
+            const cleanup = useTeleportDropdown(el as HTMLElement)
+            onBeforeUnmount(cleanup)
+          })
+        }
+      })
+    })
+  })
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  })
+
+  document.querySelectorAll(".multiselect").forEach(el => {
+    const cleanup = useTeleportDropdown(el as HTMLElement)
+    onBeforeUnmount(cleanup)
+  })
+
+  onBeforeUnmount(() => observer.disconnect())
+})
 onMounted(async () => {
   watch(
-    [buyerName, buyerDeliveryPreference, buyerContactPreference, shareBuyerLocation, buyerLocation, buyerQuantity, selectedISBN, selectedGrade, selectedTitle, selectedTags],
+    [buyerName, buyerDeliveryPreference, buyerContactPreference, buyerQuantity, selectedISBN, selectedGrade, selectedTitle, selectedTags],
     (
-      [newName, newDelivery, newContact, newShareLoc, newLocation, newQuantity, newISBN, newGrade, newTitle, newTags],
-      [oldName, oldDelivery, oldContact, oldShareLoc, oldLocation, oldQuantity, oldISBN, oldGrade, oldTitle, oldTags]
+      [newName, newDelivery, newContact, newQuantity, newISBN, newGrade, newTitle, newTags],
+      [oldName, oldDelivery, oldContact, oldQuantity, oldISBN, oldGrade, oldTitle, oldTags]
     ) => {    
       let delta = 0;
 
@@ -575,26 +599,20 @@ onMounted(async () => {
       if (newName && !oldName) delta += 20;
       if (!newName && oldName) delta -= 20;
 
-      if (newQuantity && !oldQuantity) delta += 20;
-      if (!newQuantity && oldQuantity) delta -= 20;
-
-      if(newShareLoc && !oldShareLoc) delta -= 40;
-      if(!newShareLoc && oldShareLoc) delta += 40;
-
-      if (newLocation && !oldLocation) delta += 40;
-      if (!newLocation && oldLocation) delta -= 40;
+      if (newQuantity && !oldQuantity) delta += 100/3;
+      if (!newQuantity && oldQuantity) delta -= 100/3;
 
       const newContactPreferenceLen = Array.isArray(newContact) ? newContact.length : 0;
       const oldContactPreferenceLen = Array.isArray(oldContact) ? oldContact.length : 0;
 
-      if (newContactPreferenceLen > 0 && oldContactPreferenceLen === 0) delta += 20;
-      if (newContactPreferenceLen === 0 && oldContactPreferenceLen > 0) delta -= 20;
+      if (newContactPreferenceLen > 0 && oldContactPreferenceLen === 0) delta += 100/3;
+      if (newContactPreferenceLen === 0 && oldContactPreferenceLen > 0) delta -= 100/3;
 
       const newDeliveryLen = newDelivery.length;
       const oldDeliveryLen = oldDelivery.length;
 
-      if (newDeliveryLen > 0 && oldDeliveryLen === 0) delta += 20;
-      if (newDeliveryLen === 0 && oldDeliveryLen > 0) delta -= 20;
+      if (newDeliveryLen > 0 && oldDeliveryLen === 0) delta += 100/3;
+      if (newDeliveryLen === 0 && oldDeliveryLen > 0) delta -= 100/3;
 
       updateProgress(delta);
   })
@@ -615,6 +633,19 @@ function deepUnref(obj: any): any {
   }
   return obj
 }
+
+function closeWatchlistModal() {
+  toggleWatchlistModal.value = false;
+  document.body.style.overflow = "auto";
+  document.body.style.overflowX = "hidden";
+}
+
+function closeModal() {
+  toggleModal.value = false;
+  document.body.style.overflow = "auto";
+  document.body.style.overflowX = "hidden";
+}
+
 </script>
 <template>
     <Sidebar class="sidebar"></Sidebar>
@@ -634,7 +665,7 @@ function deepUnref(obj: any): any {
     </div>
     <div class="modal-confirmation-container" v-if="toggleModal">
       <div class="modal-confirmation-content">
-        <div class="close-btn" @click="toggleModal = false"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
+        <div class="close-btn" @click="closeModal()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
         <div class="text-half">
           <h1 class="confirm-header">Your book has been requested!</h1>
           <div class="book-metadata">
@@ -643,7 +674,6 @@ function deepUnref(obj: any): any {
           </div>
           <div class="requester-data">
             <p><b>Requester Name:</b> {{ selectedNotif?.[1]?.buyerName }}</p>
-            <p><b>Requester Location:</b> {{ selectedNotif?.[1].shareBuyerLocation ? selectedNotif?.[1].buyerLocation : "Not Shared" }}</p>
             <p><b>Requester Contact Preference:</b> {{ selectedNotif?.[1].buyerContactPreference.map(x => x.name).join(', ') }}</p>
             <p><b>Requester Delivery Preference:</b> {{ selectedNotif?.[1].buyerDeliveryPreference.map(x => x.name).join(', ') }}</p>
             <p><b>Quantity Requested:</b> {{ selectedNotif?.[1].buyerQuantity }}</p>
@@ -664,7 +694,7 @@ function deepUnref(obj: any): any {
     </div>
     <div class="modal-watchlist-container" v-if="toggleWatchlistModal">
       <div class="modal-watchlist-content">
-        <div class="close-btn" @click="toggleWatchlistModal = false"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
+        <div class="close-btn" @click="closeWatchlistModal()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
         <div class="progress-container">
           <div class="slide-number-container">
               <p class="slide-number" :key="activeSlide">
@@ -893,7 +923,8 @@ function deepUnref(obj: any): any {
   top: 0;
   left: 0;
   background-color: rgba(0, 0, 0, 0.75);
-  @extend %filler;
+  width: 100%;
+  height: 100vh;
   @extend %centered;
   z-index: 9999;
   .modal-confirmation-content {
@@ -1000,7 +1031,8 @@ function deepUnref(obj: any): any {
   top: 0;
   left: 0;
   background-color: rgba(0, 0, 0, 0.75);
-  @extend %filler;
+  width: 100%;
+  height: 100vh;
   @extend %centered;
   z-index: 9999;
   .modal-watchlist-content {
@@ -1369,9 +1401,6 @@ textarea {
   .confirmation-field {
     font-size: px-to-vw(30);
   }
-  .share-location-text {
-    font-size: px-to-vw(30);
-  }
 }
 @media screen and (min-width: 1025px) {
   .sidebar {
@@ -1449,9 +1478,6 @@ textarea {
   .form-input {
     font-size: px-to-vw(30);
   }
-  .share-location-text {
-    font-size: px-to-vw(30);
-  }
   .confirmation-field {
     font-size: px-to-vw(27);
   }
@@ -1490,9 +1516,6 @@ textarea {
     }
   }
   .form-input {
-    font-size: px-to-vw(50);
-  }
-  .share-location-text {
     font-size: px-to-vw(50);
   }
   .confirmation-field {

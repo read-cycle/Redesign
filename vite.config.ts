@@ -7,7 +7,8 @@ export default defineConfig({
   base: '/Redesign/',
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
+      '@': path.resolve(__dirname, './src'),
+      BookMappings: path.resolve(__dirname, 'src/assets/BookMappings.js')
     }
   },
   css: {

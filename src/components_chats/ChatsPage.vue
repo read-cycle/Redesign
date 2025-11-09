@@ -241,6 +241,8 @@ const selectedNotif: Ref<[DocumentReference, BuyerRequestedDoc] | null> = ref(nu
 function openModal(item: [DocumentReference, BuyerRequestedDoc]) {
   selectedNotif.value = item;
   toggleConfirmationModal.value = true;
+  window.scrollY = 0;
+  document.body.style.overflow = "hidden";
 }
 
 const possibleStates = [
@@ -279,6 +281,12 @@ async function denyRequest() {
   } catch (err) {
     console.error("Error denying request:", err);
   }
+}
+
+function closeConfirmationModal() {
+  toggleConfirmationModal.value = false;
+  document.body.style.overflow = "auto";
+  document.body.style.overflowX = "hidden";
 }
 </script>
 <template>
@@ -404,7 +412,7 @@ async function denyRequest() {
 </div>
   <div class="modal-confirmation-container" v-if="toggleConfirmationModal">
       <div class="modal-confirmation-content">
-        <div class="close-btn" @click="toggleConfirmationModal = false"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
+        <div class="close-btn" @click="closeConfirmationModal()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
         <div class="text-half">
           <h1 class="confirm-header">Your book has been requested!</h1>
           <div class="book-metadata">
@@ -413,7 +421,6 @@ async function denyRequest() {
           </div>
           <div class="requester-data">
             <p><b>Requester Name:</b> {{ selectedNotif?.[1]?.buyerName }}</p>
-            <p><b>Requester Location:</b> {{ selectedNotif?.[1].shareBuyerLocation ? selectedNotif?.[1].buyerLocation : "Not Shared" }}</p>
             <p><b>Requester Contact Preference:</b> {{ selectedNotif?.[1].buyerContactPreference.map(x => x.name).join(', ') }}</p>
             <p><b>Requester Delivery Preference:</b> {{ selectedNotif?.[1].buyerDeliveryPreference.map(x => x.name).join(', ') }}</p>
             <p><b>Quantity Requested:</b> {{ selectedNotif?.[1].buyerQuantity }}</p>
@@ -900,11 +907,11 @@ async function denyRequest() {
 }
 .close-btn {
   position: absolute;
-  top: px-to-vw(20);
-  right: px-to-vw(20);
+  top: 1.25%;
+  right: 2%;
   cursor: pointer;
   z-index: 999;
-  width: px-to-vw(50);
+  width: 40px;
   aspect-ratio: 1/1;
   @extend %centered;
   svg {
@@ -917,7 +924,8 @@ async function denyRequest() {
   top: 0;
   left: 0;
   background-color: rgba(0, 0, 0, 0.75);
-  @extend %filler;
+  width: 100%;
+  height: 100vh;
   @extend %centered;
   z-index: 9999;
   .modal-confirmation-content {

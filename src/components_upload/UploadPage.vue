@@ -4,16 +4,15 @@ import Navbar from '../components/Navbar.vue';
 import {  onMounted, ref, watch, type Ref, computed, isRef, type ComputedRef, onBeforeUnmount  } from 'vue';
 import bookSVG from '../assets/icons/book.svg'
 import priceSVG from '../assets/icons/pricing.svg'
-import locationSVG from '../assets/icons/location.svg'
+import boxSVG from '../assets/icons/box.svg'
 import infoSVG from '../assets/icons/info.svg'
 import photoSVG from '../assets/icons/photo.svg'
 import ImageUploader from './ImageUploader.vue';
 import Sidebar from '../components/Sidebar.vue';
 import MetaBar from '../components/MetaBar.vue';
 import ISBN from 'isbn-utils';
-import AutocompletePhoton from './AutocompletePhoton.vue';
 import { auth, db, storage } from '../firebase-init'
-import { collection, addDoc, updateDoc, doc, serverTimestamp, deleteDoc, DocumentReference, setDoc, where, query, getDocs } from "firebase/firestore"; 
+import { collection, addDoc, updateDoc, doc, serverTimestamp, deleteDoc, DocumentReference, setDoc, where, query, getDocs, getDoc } from "firebase/firestore"; 
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useRoute, useRouter } from 'vue-router'
 import { onAuthStateChanged } from 'firebase/auth';
@@ -21,14 +20,34 @@ import success from '../assets/icons/check-big.svg?raw';
 import failure from '../assets/icons/circle-x.svg?raw';
 import type { BuyerRequestedDoc, WatchlistDoc } from '../interfaces';
 import { sendEmail } from '../sendEmail';
+import { isbnToTitle, titleToIsbn, isbnToSubject, titleToSubject, isbnToGrade, titleToGrade } from "BookMappings";
 
+console.log(isbnToGrade)
+
+let displayName: string | null = null;
 let userID: string | null = null;
 let userEmail: string | null = null;
 
-onAuthStateChanged(auth, (user) => {
+async function autofillUserData() {
+  if(!userID || !displayName) return
+
+  const snap = await getDoc(doc(db, "users", userID));
+
+  uploaderName.value = displayName;
+
+  if(snap.exists()) {
+    const data = snap.data()
+    contactPreference.value = data.contactPreferences;
+    deliveryPreference.value = data.deliveryPreferences;
+  }
+}
+
+onAuthStateChanged(auth, async(user) => {
   if (user) {
     userID = user.uid;
     userEmail = user.email;
+    displayName = user.displayName;
+    await autofillUserData()
   } else {
     router.push('/login')
   }
@@ -53,95 +72,212 @@ watch(activeSlide, (val) => {
   })
 })
 
-const slideIcons = [bookSVG, priceSVG, locationSVG, infoSVG, photoSVG]
+const slideIcons = [bookSVG, priceSVG, infoSVG, boxSVG, photoSVG]
 
-const progresses: Ref<number[]> = ref([0, 0, 0, 0, 0])
+const progresses: Ref<number[]> = ref([0, 0, 0, 100, 0])
 
 const isISBNDisabled = ref(false)
 const isTitleDisabled = ref(false)
 
-const ISBNOptions = ref([
-  { name: 'Ex1 Thing', code: 'ex1-thing' },
-  { name: 'Ex2 Thing', code: 'ex2-thing' },
-  { name: 'Ex3 Thing', code: 'ex3-thing' }
-]);
+const ISBNOptions = ref(
+  Object.keys(isbnToTitle).map(key => ({
+    name: key,
+    code: key
+  }))
+);
 
 const selectedISBN = ref();
 
 watch(selectedISBN, (newISBN) => {
   if(newISBN == null){
     isTitleDisabled.value = false;
-    selectedTitle.value = null;
     return
-  } else {
+  } else if(isISBNDisabled.value == false) {
     isTitleDisabled.value = true;
+    selectedTitle.value = null;
+  } else {
+    return
   }
-  console.log(newISBN.code)
-  const raw = newISBN?.code?.replace(/[-\s]/g, '')
+
+  if(isbnToSubject[newISBN.code]) {
+    const subject: string = isbnToSubject[newISBN.code];
+    selectedSubject.value = {
+      name: subject,
+      code: subject.toLowerCase().replace(/\s+/g, '-')
+    }
+  }
+
+  if (isbnToGrade[newISBN.code]) {
+    const grade: string = isbnToGrade[newISBN.code].toLowerCase();
+
+    console.log("GRADE")
+    console.log(grade)
+
+    let gradeName = grade;
+
+    if (grade.startsWith("g")) {
+      gradeName = `Grade ${grade.slice(1)}`;
+    } else if (grade === "bp") {
+      gradeName = "Bridge Program";
+    }
+
+    selectedGrade.value = {
+      name: gradeName,
+      code: grade
+    };
+  }
+
+  if(isbnToTitle[newISBN.code]) {
+    const title: string = isbnToTitle[newISBN.code];
+    selectedTitle.value = {
+      name: title,
+      code: title.toLowerCase().replace(/\s+/g, '-')
+    };
+    return
+  }
+
+  const raw = newISBN?.code?.replace(/[-\s]/g, '');
 
   if (ISBN.isValid(raw)) {
     const isbnObj = ISBN.parse(raw) as ISBN.ISBN;
-    console.log('Valid ISBN:', isbnObj.asIsbn13())
-    fetch(`https://openlibrary.org/isbn/${isbnObj.asIsbn13()}.json`)
+    const isbn13 = isbnObj.asIsbn13();
+    console.log('Valid ISBN:', isbn13);
+
+    fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn13}`)
       .then(res => res.json())
       .then(data => {
-        console.log(data)
-        const title: string = data.title
-        selectedTitle.value = {
-          name: title,
-          code: title.toLowerCase().replace(/\s+/g, '-')
-        };
+        if (data.totalItems > 0) {
+          const book = data.items[0].volumeInfo;
+
+          const title: string = book.title;
+          selectedTitle.value = {
+            name: title,
+            code: title.toLowerCase().replace(/\s+/g, '-')
+          };
+        } else {
+          console.log('No book found for this ISBN');
+          selectedTitle.value = null;
+        }
       })
+      .catch(err => {
+        console.error('Error fetching from Google Books:', err);
+        selectedTitle.value = null;
+      });
+
   } else {
-    console.log('Invalid ISBN')
+    console.log('Invalid ISBN');
+    selectedTitle.value = null;
   }
-})
+});
 
 const selectedTitle = ref();
 
 watch(selectedTitle, (newTitle) => {
+  console.log("NEW TITLE")
+  console.log(newTitle)
   if(newTitle == null){
     isISBNDisabled.value = false;
     return
   } else if(isTitleDisabled.value == false) {
     isISBNDisabled.value = true;
     selectedISBN.value = null;
+  } else {
+    return
+  }
+
+  if(titleToIsbn[newTitle.name]) {
+    const isbn: string = titleToIsbn[newTitle.name];
+    selectedISBN.value = {
+      name: isbn,
+      code: isbn.replace('-', '')
+    };
+  }
+
+  if(titleToSubject[newTitle.name]) {
+    const subject: string = titleToSubject[newTitle.name];
+    selectedSubject.value = {
+      name: subject,
+      code: subject.toLowerCase().replace(/\s+/g, '-')
+    }
+  }
+
+  if (titleToGrade[newTitle.name]) {
+    const grade: string = titleToGrade[newTitle.name].toLowerCase();
+
+    console.log(grade)
+
+    let gradeName = grade;
+
+    if (grade.startsWith("g")) {
+      gradeName = `Grade ${grade.slice(1)}`;
+    } else if (grade === "bp") {
+      gradeName = "Bridge Program";
+    }
+
+    selectedGrade.value = {
+      name: gradeName,
+      code: grade
+    };
   }
 })
 
 const gradeOptions = ref([
-  { name: 'Grade 1', code: 'g1' },
-  { name: 'Grade 2', code: 'g2' },
-  { name: 'Grade 3', code: 'g3' },
-  { name: 'Grade 4', code: 'g4' },
-  { name: 'Grade 5', code: 'g5' },
-  { name: 'Grade 6', code: 'g6' },
-  { name: 'Grade 7', code: 'g7' },
-  { name: 'Grade 8', code: 'g8' },
-  { name: 'Grade 9', code: 'g9' },
-  { name: 'Grade 10', code: 'g10' },
-  { name: 'Grade 11', code: 'g11' },
-  { name: 'Grade 12', code: 'g12' }
+  { name: 'Grade 1', code: '1' },
+  { name: 'Grade 2', code: '2' },
+  { name: 'Grade 3', code: '3' },
+  { name: 'Grade 4', code: '4' },
+  { name: 'Grade 5', code: '5' },
+  { name: 'Grade 6', code: '6' },
+  { name: 'Grade 7', code: '7' },
+  { name: 'Grade 8', code: '8' },
+  { name: 'Grade 9', code: '9' },
+  { name: 'Grade 10', code: '10' },
+  { name: 'Grade 11 AS', code: '11' },
+  { name: 'Grade 12 AS', code: '12' },
+  { name: 'Bridge Program', code: 'bp' }
 ]);
-
-const titleOptions = ref([
-  { name: 'Ex1 Thing', code: 'ex1-thing' },
-  { name: 'Ex2 Thing', code: 'ex2-thing' },
-  { name: 'Ex3 Thing', code: 'ex3-thing' }
-])
 
 const selectedGrade = ref();
 
-let tagOptions: Ref<{name: string, code: string}[]> = ref([
-  { name: 'Ex1 Thing', code: 'ex1-thing' },
-  { name: 'Ex2 Thing', code: 'ex2-thing' },
-  { name: 'Ex3 Thing', code: 'ex3-thing' }
-]);
-let selectedTags: Ref<{name: string, code: string}[]> = ref([]);
+const subjectOptions = ref(
+  Array.from(new Set(Object.values(isbnToSubject))).map((val) => ({
+    name: val as string,
+    code: (val as string).toLowerCase().replace(/\s+/g, '-')
+  }))
+);
 
-function updateProgress(delta: number) {
-  progresses.value[activeSlide.value - 1] = Math.min(100, Math.max(0, progresses.value[activeSlide.value - 1] + delta))
-}
+const selectedSubject = ref();
+
+const titleOptions = ref(
+  Object.keys(titleToIsbn).map(key => ({
+    name: key,
+    code: key.toLowerCase().replace(/\s+/g, '-')
+  }))
+);
+
+let tagOptions: Ref<{ name: string; code: string }[]> = ref([
+  { name: "Cambridge", code: "cambridge" },
+  { name: "Oxford", code: "oxford" },
+  { name: "Hodder", code: "hodder" },
+  { name: "Viva", code: "viva" },
+  { name: "Saral", code: "saral" },
+  { name: "Collins", code: "collins" },
+  { name: "Primary", code: "primary" },
+  { name: "Lower Secondary", code: "lower-secondary" },
+  { name: "IGCSE", code: "igcse" },
+  { name: "AS Level", code: "as-level" },
+  { name: "A Level", code: "a-level" },
+  { name: "Bridge Program", code: "bridge-program" },
+  { name: "Coursebook", code: "coursebook" },
+  { name: "Learner's Book", code: "learners-book" },
+  { name: "Activity Book", code: "activity-book" },
+  { name: "Workbook", code: "workbook" },
+  { name: "Exam Preparation", code: "exam-preparation" },
+  { name: "Digital Access", code: "digital-access" }
+]);
+
+
+let selectedTags: Ref<{name: string, code: string}[]> = ref([]);
 
 const conditionOptions: Ref<{name: string, code: string}[]> = ref([
   { name: "new", code: "new" },
@@ -184,10 +320,6 @@ const conditionDetailTags = ref([
 
 const conditionDetails: Ref<{name: string, code: string}[]> = ref([]);
 
-const userLocation = ref('');
-
-const shareLocation = ref(true);
-
 const deliveryPreferenceOptions = [{ name: 'Meetup', code: 'meetup' }, { name: 'Delivery', code: 'delivery' }]
 
 const deliveryPreference: Ref<{name: string, code: string}[]> = ref([]);
@@ -207,12 +339,6 @@ const listingImage: Ref<File | null> = ref(null);
 const extraImages: Ref<File[] | null> = ref(null);
 
 const extraInfo = ref('');
-
-watch(shareLocation, (newVal) => {
-  if (!newVal) {
-    userLocation.value = ''
-  }
-})
 
 const slides = [
   {
@@ -268,7 +394,7 @@ const slides = [
               onTag: (newTag: string) => {
                 const tagObj = {
                   name: newTag,
-                  code: newTag.replace(/[\s-]/g, '')
+                  code: newTag.toLowerCase().replace(/[\s-]/g, '')
                 }
                 addItem(tagObj, titleOptions, selectedTitle, false)
               }
@@ -288,18 +414,30 @@ const slides = [
               'onUpdate:modelValue': (val: { name: string; code: string; }[]) => selectedGrade.value = val,
               options: gradeOptions,
               searchable: true,
-              taggable: true,
               placeholder: 'Enter Grade',
               class: 'multiselect',
               label: 'name',
               trackBy: 'code',
-              onTag: (newTag: string) => {
-                const tagObj = {
-                  name: newTag,
-                  code: newTag.replace(/[\s-]/g, '')
-                }
-                addItem(tagObj, gradeOptions, selectedGrade, false)
-              }
+            }
+          }
+        ]
+      },
+      {
+        label: 'Subject',
+        data: [
+          {
+            component: Multiselect,
+            props: {
+              id: "subjectMS",
+              name: "subjectMS",
+              modelValue: selectedSubject,
+              'onUpdate:modelValue': (val: { name: string; code: string; }[]) => selectedSubject.value = val,
+              options: subjectOptions,
+              searchable: true,
+              placeholder: 'Enter Subject',
+              class: 'multiselect',
+              label: 'name',
+              trackBy: 'code'
             }
           }
         ]
@@ -330,20 +468,6 @@ const slides = [
                 }
                 addItem(tagObj, tagOptions, selectedTags, true)
               }
-            }
-          }
-        ]
-      },
-      {
-        label: 'Extra Information',
-        data: [
-          {
-            component: 'textarea',
-            props: {
-              value: extraInfo.value,
-              onInput: (e: Event) => extraInfo.value = (e.target as HTMLInputElement).value,
-              type: 'text',
-              min: 0
             }
           }
         ]
@@ -466,68 +590,6 @@ const slides = [
     ]
   },
   {
-    header: 'Location & Delivery',
-    sections: [
-      {
-        label: 'Your Location',
-        data: [
-          {
-            component: AutocompletePhoton,
-            props: {
-              modelValue: userLocation,
-              'onUpdate:modelValue': (val: string) => userLocation.value = val,
-              disabled: computed(() => !shareLocation.value)
-            }
-          }
-        ]
-      },
-      {
-        label: 'Share Location?',
-        data: [
-          {
-            component: 'input',
-            props: {
-              type: 'checkbox',
-              checked: shareLocation,
-              onInput: (e: Event) => shareLocation.value = (e.target as HTMLInputElement).checked,
-              class: 'share-location-checkbox',
-              id: 'share-location-checkbox'
-            }
-          },
-          {
-            component: 'label',
-            props: {
-              innerHTML: 'Share Location to allow people near you to see your book.',
-              class: 'share-location-text',
-              for: 'share-location-checkbox'
-            }
-          }
-        ]
-      },
-      {
-        label: 'Delivery Preference',
-        data: [
-          {
-            component: Multiselect,
-            props: {
-              modelValue: deliveryPreference,
-              'onUpdate:modelValue': (val: { name: string; code: string; }[]) => deliveryPreference.value = val,
-              options: deliveryPreferenceOptions,
-              placeholder: 'Choose delivery preference',
-              multiple: true,
-              taggable: true,
-              searchable: true,
-              tagPlaceholder: 'Add this as new tag',
-              label: 'name',
-              trackBy: 'code',
-              class: 'multiselect',
-            }
-          }
-        ]
-      }
-    ]
-  },
-  {
     header: 'Your Info',
     sections: [
       {
@@ -562,6 +624,46 @@ const slides = [
               label: 'name',
               trackBy: 'code',
               class: 'multiselect',
+            }
+          }
+        ]
+      },
+      {
+        label: 'Delivery Preference',
+        data: [
+          {
+            component: Multiselect,
+            props: {
+              modelValue: deliveryPreference,
+              'onUpdate:modelValue': (val: { name: string; code: string; }[]) => deliveryPreference.value = val,
+              options: deliveryPreferenceOptions,
+              placeholder: 'Choose delivery preference',
+              multiple: true,
+              taggable: true,
+              searchable: true,
+              tagPlaceholder: 'Add this as new tag',
+              label: 'name',
+              trackBy: 'code',
+              class: 'multiselect',
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    header: 'Miscellaneous',
+    sections: [
+      {
+        label: 'Extra Information',
+        data: [
+          {
+            component: 'textarea',
+            props: {
+              value: extraInfo.value,
+              onInput: (e: Event) => extraInfo.value = (e.target as HTMLInputElement).value,
+              type: 'text',
+              min: 0
             }
           }
         ]
@@ -684,15 +786,8 @@ const slides = [
         ]
       },
       {
-        label: 'Location & Delivery',
+        label: 'Delivery',
         data: [
-          {
-            component: 'p',
-            props: {
-              text: computed(() => `Location: ${userLocation.value || 'Not shared'}`),
-              class: 'confirmation-field'
-            }
-          },
           {
             component: 'p',
             props: {
@@ -764,11 +859,10 @@ async function submitData() {
         title: selectedTitle.value || null,
         grade: selectedGrade.value || null,
         tags: selectedTags.value || [],
+        subject: selectedSubject.value || null,
         condition: selectedCondition.value || null,
         priceMode: priceMode.value || null,
         conditionDetails: conditionDetails.value || [],
-        userLocation: userLocation.value || "",
-        shareLocation: shareLocation.value,
         deliveryPreference: deliveryPreference.value || "",
         price: price.value || 0,
         quantity: quantity.value || 0,
@@ -865,89 +959,101 @@ function useTeleportDropdown(el: HTMLElement) {
   return cleanup
 }
 onMounted(() => {
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node instanceof HTMLElement && node.classList.contains("multiselect")) {
+          console.log("NEW MULTISELECT: ", node)
+          const cleanup = useTeleportDropdown(node)
+          onBeforeUnmount(cleanup)
+        }
+        if (node instanceof HTMLElement) {
+          node.querySelectorAll(".multiselect").forEach(el => {
+            console.log("NEW MULTISELECT (child): ", el)
+            const cleanup = useTeleportDropdown(el as HTMLElement)
+            onBeforeUnmount(cleanup)
+          })
+        }
+      })
+    })
+  })
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  })
+
   document.querySelectorAll(".multiselect").forEach(el => {
     const cleanup = useTeleportDropdown(el as HTMLElement)
     onBeforeUnmount(cleanup)
   })
+
+  onBeforeUnmount(() => observer.disconnect())
 })
 onMounted(() => {
-    watch([selectedISBN, selectedTitle, selectedGrade, selectedTags, selectedCondition, conditionDetails, priceMode, price, quantity, deliveryPreference, userLocation, shareLocation, uploaderName, contactPreference, listingImage, extraImages], ([newISBN, newTitle, newGrade, newTags, newCondition, newConditionDetails, newPriceMode, newPrice, newQuantity, newDeliveryPreference, newLocation, newShareLocation, newUploaderName, newContactPreference, newListingImage, newExtraImages], [oldISBN, oldTitle, oldGrade, oldTags, oldCondition, oldConditionDetails, oldPriceMode, oldPrice, oldQuantity, oldDeliveryPreference, oldLocation, oldShareLocation, oldUploaderName, oldContactPreference, oldListingImage, oldExtraImages]) => {
-        let delta = 0;
+    watch([selectedISBN, selectedTitle, selectedGrade, selectedTags, selectedCondition, conditionDetails, priceMode, price, quantity, deliveryPreference, uploaderName, contactPreference, listingImage, extraImages], ([newISBN, newTitle, newGrade, newTags, newCondition, newConditionDetails, newPriceMode, newPrice, newQuantity, newDeliveryPreference, newUploaderName, newContactPreference, newListingImage, newExtraImages], [oldISBN, oldTitle, oldGrade, oldTags, oldCondition, oldConditionDetails, oldPriceMode, oldPrice, oldQuantity, oldDeliveryPreference, oldUploaderName, oldContactPreference, oldListingImage, oldExtraImages]) => {
+        if (newISBN && !oldISBN) progresses.value[0] += 25;
+        if (!newISBN && oldISBN) progresses.value[0] -= 25;
 
-        if (newISBN && !oldISBN) delta += 25;
-        if (!newISBN && oldISBN) delta -= 25;
+        if (newTitle && !oldTitle) progresses.value[0] += 25;
+        if (!newTitle && oldTitle) progresses.value[0] -= 25;
 
-        if (newTitle && !oldTitle) delta += 25;
-        if (!newTitle && oldTitle) delta -= 25;
+        if (newGrade && !oldGrade) progresses.value[0] += 25;
+        if (!newGrade && oldGrade) progresses.value[0] -= 25;
 
-        if (newGrade && !oldGrade) delta += 25;
-        if (!newGrade && oldGrade) delta -= 25;
-
-        if (newCondition && !oldCondition) delta += 20;
-        if (!newCondition && oldCondition) delta -= 20;
+        if (newCondition && !oldCondition) progresses.value[1] += 20;
+        if (!newCondition && oldCondition) progresses.value[1] -= 20;
         
         const newConditionDetailsLen = newConditionDetails.length;
         const oldConditionDetailsLen = oldConditionDetails.length;
 
-        if (newConditionDetailsLen > 0 && oldConditionDetailsLen === 0) delta += 20;
-        if (newConditionDetailsLen === 0 && oldConditionDetailsLen > 0) delta -= 20;
+        if (newConditionDetailsLen > 0 && oldConditionDetailsLen === 0) progresses.value[1] += 20;
+        if (newConditionDetailsLen === 0 && oldConditionDetailsLen > 0) progresses.value[1] -= 20;
         
-        if (newPriceMode && !oldPriceMode) delta += 20;
-        if (!newPriceMode && oldPriceMode) delta -= 20;
+        if (newPriceMode && !oldPriceMode) progresses.value[1] += 20;
+        if (!newPriceMode && oldPriceMode) progresses.value[1] -= 20;
 
         if(newPriceMode && !oldPriceMode && newPriceMode?.code === 'free') {
-          delta += 20;
+          progresses.value[1] += 20;
         } else if (oldPriceMode?.code === 'free' && newPriceMode?.code !== 'free') {
-          delta -= 20;
+          progresses.value[1] -= 20;
         }
 
-        if (newPrice && !oldPrice) delta += 20;
-        if (!newPrice  && oldPrice) delta -= 20;
+        if (newPrice && !oldPrice) progresses.value[1] += 20;
+        if (!newPrice  && oldPrice) progresses.value[1] -= 20;
 
-        if (newQuantity && !oldQuantity) delta += 20;
-        if (!newQuantity && oldQuantity) delta -= 20;
+        if (newQuantity && !oldQuantity) progresses.value[1] += 20;
+        if (!newQuantity && oldQuantity) progresses.value[1] -= 20;
 
-        if(newShareLocation && !oldShareLocation) {
-          delta -= 50;
-        } 
-        if(!newShareLocation && oldShareLocation) {
-          delta += 50;
-        }
-
-        if (newLocation && !oldLocation) delta += 50;
-        if (!newLocation && oldLocation) delta -= 50;
-
-        if (newUploaderName && !oldUploaderName) delta += 50;
-        if (!newUploaderName && oldUploaderName) delta -= 50;
+        if (newUploaderName && !oldUploaderName) progresses.value[2] += 100/3;
+        if (!newUploaderName && oldUploaderName) progresses.value[2] -= 100/3;
 
         const newContactPreferenceLen = Array.isArray(newContactPreference) ? newContactPreference.length : 0;
         const oldContactPreferenceLen = Array.isArray(oldContactPreference) ? oldContactPreference.length : 0;
 
-        if (newContactPreferenceLen > 0 && oldContactPreferenceLen === 0) delta += 50;
-        if (newContactPreferenceLen === 0 && oldContactPreferenceLen > 0) delta -= 50;
+        if (newContactPreferenceLen > 0 && oldContactPreferenceLen === 0) progresses.value[2] += 100/3;
+        if (newContactPreferenceLen === 0 && oldContactPreferenceLen > 0) progresses.value[2] -= 100/3;
 
         const newDeliveryLen = newDeliveryPreference.length;
         const oldDeliveryLen = oldDeliveryPreference.length;
 
-        if (newDeliveryLen > 0 && oldDeliveryLen === 0) delta += 50;
-        if (newDeliveryLen === 0 && oldDeliveryLen > 0) delta -= 50;
+        if (newDeliveryLen > 0 && oldDeliveryLen === 0) progresses.value[2] += 100/3;
+        if (newDeliveryLen === 0 && oldDeliveryLen > 0) progresses.value[2] -= 100/3;
 
-        if (newListingImage && !oldListingImage) delta += 50;
-        if (!newListingImage && oldListingImage) delta -= 50;
+        if (newListingImage && !oldListingImage) progresses.value[4] += 50;
+        if (!newListingImage && oldListingImage) progresses.value[4] -= 50;
 
         const newExtraImagesLen = Array.isArray(newExtraImages) ? newExtraImages.length : 0;
         const oldExtraImagesLen = Array.isArray(oldExtraImages) ? oldExtraImages.length : 0;
 
-        if (newExtraImagesLen > 0 && oldExtraImagesLen === 0) delta += 50;
-        if (newExtraImagesLen === 0 && oldExtraImagesLen > 0) delta -= 50;
+        if (newExtraImagesLen > 0 && oldExtraImagesLen === 0) progresses.value[4] += 50;
+        if (newExtraImagesLen === 0 && oldExtraImagesLen > 0) progresses.value[4] -= 50;
 
         const newTagsLen = newTags.length;
         const oldTagsLen = oldTags.length;
 
-        if (newTagsLen > 0 && oldTagsLen === 0) delta += 25;
-        if (newTagsLen === 0 && oldTagsLen > 0) delta -= 25;
-
-        updateProgress(delta);
+        if (newTagsLen > 0 && oldTagsLen === 0) progresses.value[0] += 25;
+        if (newTagsLen === 0 && oldTagsLen > 0) progresses.value[0] -= 25;
     })
 })
 function getText(dataComp: { props: any }) {
@@ -993,6 +1099,7 @@ function deepUnref(obj: any): any {
   }
   return obj
 }
+
 const toggleConfirmationModal = ref(false);
 
 const selectedNotif: Ref<[DocumentReference, BuyerRequestedDoc] | null> = ref(null);
@@ -1000,6 +1107,8 @@ const selectedNotif: Ref<[DocumentReference, BuyerRequestedDoc] | null> = ref(nu
 function openModal(item: [DocumentReference, BuyerRequestedDoc]) {
   selectedNotif.value = item;
   toggleConfirmationModal.value = true;
+  window.scrollY = 0;
+  document.body.style.overflow = "hidden";
 }
 
 const possibleStates = [
@@ -1038,6 +1147,12 @@ async function denyRequest() {
   } catch (err) {
     console.error("Error denying request:", err);
   }
+}
+
+function closeConfirmationModal() {
+  toggleConfirmationModal.value = false;
+  document.body.style.overflow = "auto";
+  document.body.style.overflowX = "hidden";
 }
 </script>
 <template>
@@ -1116,7 +1231,7 @@ async function denyRequest() {
   </div>
     <div class="modal-confirmation-container" v-if="toggleConfirmationModal">
       <div class="modal-confirmation-content">
-        <div class="close-btn" @click="toggleConfirmationModal = false"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
+        <div class="close-btn" @click="closeConfirmationModal()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
         <div class="text-half">
           <h1 class="confirm-header">Your book has been requested!</h1>
           <div class="book-metadata">
@@ -1125,7 +1240,6 @@ async function denyRequest() {
           </div>
           <div class="requester-data">
             <p><b>Requester Name:</b> {{ selectedNotif?.[1]?.buyerName }}</p>
-            <p><b>Requester Location:</b> {{ selectedNotif?.[1].shareBuyerLocation ? selectedNotif?.[1].buyerLocation : "Not Shared" }}</p>
             <p><b>Requester Contact Preference:</b> {{ selectedNotif?.[1].buyerContactPreference.map(x => x.name).join(', ') }}</p>
             <p><b>Requester Delivery Preference:</b> {{ selectedNotif?.[1].buyerDeliveryPreference.map(x => x.name).join(', ') }}</p>
             <p><b>Quantity Requested:</b> {{ selectedNotif?.[1].buyerQuantity }}</p>
@@ -1306,6 +1420,7 @@ async function denyRequest() {
                     font-family: 'Nunito';
                     resize: none;
                     width: 100%;
+                    height: 100%;
                   }
                 }
             }
@@ -1464,11 +1579,11 @@ input[type="checkbox"]:checked::after {
 }
 .close-btn {
   position: absolute;
-  top: px-to-vw(20);
-  right: px-to-vw(20);
+  top: 1.25%;
+  right: 2%;
   cursor: pointer;
   z-index: 999;
-  width: px-to-vw(50);
+  width: 40px;
   aspect-ratio: 1/1;
   @extend %centered;
   svg {
@@ -1481,7 +1596,8 @@ input[type="checkbox"]:checked::after {
   top: 0;
   left: 0;
   background-color: rgba(0, 0, 0, 0.75);
-  @extend %filler;
+  width: 100%;
+  height: 100vh;
   @extend %centered;
   z-index: 9999;
   .modal-confirmation-content {
@@ -1736,9 +1852,6 @@ input[type="checkbox"]:checked::after {
   }
   .form-input {
     font-size: px-to-vw(50);
-  }
-  .share-location-text {
-    font-size: px-to-vw(30);
   }
   .confirmation-field {
     font-size: px-to-vw(40);

@@ -34,6 +34,7 @@ function formatTimestampToDDMMYY(ts: Timestamp) {
 </template>
 <style lang="scss" scoped>
 .card-container {
+    width: 250px;
     aspect-ratio: 8/9;
     display: flex;
     flex-direction: column;
@@ -42,6 +43,7 @@ function formatTimestampToDDMMYY(ts: Timestamp) {
     overflow: hidden;
     cursor: pointer;
     box-shadow: 5px 5px 10px 1px #ccc;
+    min-width: 0;
     .image-container {
         height: 60%;
         width: 100%;
