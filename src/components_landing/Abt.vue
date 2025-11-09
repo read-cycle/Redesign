@@ -38,7 +38,7 @@
     display: flex;
     justify-content: center;
     flex-direction: column;
-    padding: 1rem;
+    padding: 1vw;
     row-gap: 10px;
 }
 @media screen and (min-width: 1025px) {
@@ -47,6 +47,7 @@
         height: 100%;
         text-align: right;
         align-items: flex-end;
+        padding: 4vw;
     }
     .image-half {
         width: 50%;
@@ -61,6 +62,7 @@
         height: 100%;
         text-align: center;
         align-items: center;
+        padding: 1vw;
     }
     .image-half {
         position: absolute;

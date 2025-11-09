@@ -95,19 +95,20 @@ function applySort() {
   }
 }
 
-const gradeOptions: Ref<CodeName[]> = ref([
-  { code: 'g1', name: 'Grade 1' },
-  { code: 'g2', name: 'Grade 2' },
-  { code: 'g3', name: 'Grade 3' },
-  { code: 'g4', name: 'Grade 4' },
-  { code: 'g5', name: 'Grade 5' },
-  { code: 'g6', name: 'Grade 6' },
-  { code: 'g7', name: 'Grade 7' },
-  { code: 'g8', name: 'Grade 8' },
-  { code: 'g9', name: 'Grade 9' },
-  { code: 'g10', name: 'Grade 10' },
-  { code: 'g11', name: 'Grade 11' },
-  { code: 'g12', name: 'Grade 12' },
+const gradeOptions = ref([
+  { name: 'Grade 1', code: '1' },
+  { name: 'Grade 2', code: '2' },
+  { name: 'Grade 3', code: '3' },
+  { name: 'Grade 4', code: '4' },
+  { name: 'Grade 5', code: '5' },
+  { name: 'Grade 6', code: '6' },
+  { name: 'Grade 7', code: '7' },
+  { name: 'Grade 8', code: '8' },
+  { name: 'Grade 9', code: '9' },
+  { name: 'Grade 10', code: '10' },
+  { name: 'Grade 11 AS', code: '11' },
+  { name: 'Grade 12 AS', code: '12' },
+  { name: 'Bridge Program', code: 'bp' }
 ]);
 
 const selectedGrades: Ref<CodeName[]> = ref([]);

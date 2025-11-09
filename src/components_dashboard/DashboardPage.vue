@@ -20,6 +20,7 @@ import checkSVG from '../assets/icons/check.svg'
 import Multiselect from 'vue-multiselect';
 import ISBN from 'isbn-utils';
 import Navbar from '../components/Navbar.vue';
+import { titleToIsbn } from 'BookMappings';
 
 let userID: string | null = null;
 let userEmail: string | null = null;
@@ -206,33 +207,51 @@ watch(selectedTitle, (newTitle) => {
 })
 
 const gradeOptions = ref([
-  { name: 'Grade 1', code: 'g1' },
-  { name: 'Grade 2', code: 'g2' },
-  { name: 'Grade 3', code: 'g3' },
-  { name: 'Grade 4', code: 'g4' },
-  { name: 'Grade 5', code: 'g5' },
-  { name: 'Grade 6', code: 'g6' },
-  { name: 'Grade 7', code: 'g7' },
-  { name: 'Grade 8', code: 'g8' },
-  { name: 'Grade 9', code: 'g9' },
-  { name: 'Grade 10', code: 'g10' },
-  { name: 'Grade 11', code: 'g11' },
-  { name: 'Grade 12', code: 'g12' }
+  { name: 'Grade 1', code: '1' },
+  { name: 'Grade 2', code: '2' },
+  { name: 'Grade 3', code: '3' },
+  { name: 'Grade 4', code: '4' },
+  { name: 'Grade 5', code: '5' },
+  { name: 'Grade 6', code: '6' },
+  { name: 'Grade 7', code: '7' },
+  { name: 'Grade 8', code: '8' },
+  { name: 'Grade 9', code: '9' },
+  { name: 'Grade 10', code: '10' },
+  { name: 'Grade 11 AS', code: '11' },
+  { name: 'Grade 12 AS', code: '12' },
+  { name: 'Bridge Program', code: 'bp' }
 ]);
 
-const titleOptions = ref([
-  { name: 'Ex1 Thing', code: 'ex1-thing' },
-  { name: 'Ex2 Thing', code: 'ex2-thing' },
-  { name: 'Ex3 Thing', code: 'ex3-thing' }
-])
+const titleOptions = ref(
+  Object.keys(titleToIsbn).map(key => ({
+    name: key,
+    code: key.toLowerCase().replace(/\s+/g, '-')
+  }))
+);
+
+let tagOptions: Ref<{ name: string; code: string }[]> = ref([
+  { name: "Cambridge", code: "cambridge" },
+  { name: "Oxford", code: "oxford" },
+  { name: "Hodder", code: "hodder" },
+  { name: "Viva", code: "viva" },
+  { name: "Saral", code: "saral" },
+  { name: "Collins", code: "collins" },
+  { name: "Primary", code: "primary" },
+  { name: "Lower Secondary", code: "lower-secondary" },
+  { name: "IGCSE", code: "igcse" },
+  { name: "AS Level", code: "as-level" },
+  { name: "A Level", code: "a-level" },
+  { name: "Bridge Program", code: "bridge-program" },
+  { name: "Coursebook", code: "coursebook" },
+  { name: "Learner's Book", code: "learners-book" },
+  { name: "Activity Book", code: "activity-book" },
+  { name: "Workbook", code: "workbook" },
+  { name: "Exam Preparation", code: "exam-preparation" },
+  { name: "Digital Access", code: "digital-access" }
+]);
 
 const selectedGrade = ref();
 
-let tagOptions: Ref<{name: string, code: string}[]> = ref([
-  { name: 'Ex1 Thing', code: 'ex1-thing' },
-  { name: 'Ex2 Thing', code: 'ex2-thing' },
-  { name: 'Ex3 Thing', code: 'ex3-thing' }
-]);
 let selectedTags: Ref<{name: string, code: string}[]> = ref([]);
 
 const extraInfo = ref('')

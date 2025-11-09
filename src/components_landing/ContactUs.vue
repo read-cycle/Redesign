@@ -3,7 +3,7 @@
 <div class="text-half">
   <h2 class="text-half-heading">Get in Touch</h2>
   <p class="text-half-subheading">
-    Questions? Suggestions? Plane full of books headed my way? I'm all ears.
+    Questions? Suggestions? I'm all ears.
   </p>
   <p class="text-half-para">
     Whether you're looking for a book, want to suggest a feature, or just feel like saying hi — drop a message below!

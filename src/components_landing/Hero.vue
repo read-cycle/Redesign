@@ -5,7 +5,6 @@ import peep1 from '@/assets/images/peep-1.svg';
 import peep2 from '@/assets/images/peep-2.svg';
 import peep3 from '@/assets/images/peep-3.svg';
 import peep4 from '@/assets/images/peep-4.svg';
-import RandomIconDrawer from './RandomIconDrawer.vue';
 
 function getGlyphBox(el: HTMLElement, letterIndex: number) {
   const textNodes = [...el.childNodes].filter(n => n.nodeType === Node.TEXT_NODE);
@@ -46,7 +45,7 @@ function getManropeOGlyphMetrics(
   };
 }
 
-const glyphIndices = [2, 5, 7, 9]
+const glyphIndices = [2, 3, 5, 7]
 
 onMounted(async () => {
     await document.fonts.ready;
@@ -89,7 +88,7 @@ onMounted(async () => {
     redBox.style.backgroundSize = "contain";
     redBox.style.backgroundPosition = "center center";
     redBox.style.position = "absolute";
-    redBox.style.top = `${scaleWidth(10)}px`;
+    redBox.style.top = `${scaleWidth(3)}px`;
     redBox.style.left = "50%";
     redBox.style.transform = "translate(-50%)";
     redBox.style.width = `${scaleWidth(130)}px`;
@@ -116,10 +115,10 @@ onMounted(async () => {
     redBox3.style.backgroundSize = "contain";
     redBox3.style.backgroundPosition = "center center";
     redBox3.style.position = "absolute";
-    redBox3.style.left = `${scaleWidth(35)}px`;
+    redBox3.style.left = `${scaleWidth(70)}px`;
     redBox3.style.width = `${scaleWidth(130)}px`;
     redBox3.style.transform = "translateX(-50%) rotate(2.5deg)";
-    redBox3.style.top = `${scaleWidth(-65)}px`;
+    redBox3.style.top = `${scaleWidth(-60)}px`;
     redBox3.style.aspectRatio = "495 / 337";
     peepBoxes[2].appendChild(redBox3);
 
@@ -142,10 +141,9 @@ onMounted(async () => {
 <template>
     <!--TODO: Center hero-header vertically, with cta-btn and hero-subtext below. Add "A project by Nikhil Singh" and "beta v 1.0" in top left, and scrolling-down chevron-down button in bottom right. And, obv, add peeps.-->
     <div class="hero-container">
-        <RandomIconDrawer></RandomIconDrawer>
         <h1 class="hero-header">
-          <span class="lead-in">Second Chapters,</span><br>
-          <span class="hero-highlighted">Shared<br class="mobile-break"> Books</span>
+          <span class="lead-in">Second Chapters Start Here</span><br>
+          <span class="hero-highlighted">Read<br class="mobile-break"> Cycle</span>
         </h1>
         <div class="cta-btn-container">
             <button class="cta-btn">Start Sharing</button>
@@ -186,6 +184,7 @@ onMounted(async () => {
             font-size: clamp(2rem, 12vw, 30vh);            
             background: linear-gradient(to right, $color-primary, $color-accent);
             background-clip: text;
+            word-spacing: 50px;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
