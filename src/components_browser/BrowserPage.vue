@@ -116,10 +116,25 @@ const selectedISBNs: Ref<CodeName[]> = ref([]);
 
 const selectedSubjects: Ref<CodeName[]> = ref([]);
 
-let tagOptions: Ref<{name: string, code: string}[]> = ref([
-  { name: 'Ex1 Thing', code: 'ex1-thing' },
-  { name: 'Ex2 Thing', code: 'ex2-thing' },
-  { name: 'Ex3 Thing', code: 'ex3-thing' }
+let tagOptions: Ref<{ name: string; code: string }[]> = ref([
+  { name: "Cambridge", code: "cambridge" },
+  { name: "Oxford", code: "oxford" },
+  { name: "Hodder", code: "hodder" },
+  { name: "Viva", code: "viva" },
+  { name: "Saral", code: "saral" },
+  { name: "Collins", code: "collins" },
+  { name: "Primary", code: "primary" },
+  { name: "Lower Secondary", code: "lower-secondary" },
+  { name: "IGCSE", code: "igcse" },
+  { name: "AS Level", code: "as-level" },
+  { name: "A Level", code: "a-level" },
+  { name: "Bridge Program", code: "bridge-program" },
+  { name: "Coursebook", code: "coursebook" },
+  { name: "Learner's Book", code: "learners-book" },
+  { name: "Activity Book", code: "activity-book" },
+  { name: "Workbook", code: "workbook" },
+  { name: "Exam Preparation", code: "exam-preparation" },
+  { name: "Digital Access", code: "digital-access" }
 ]);
 const selectedTags: Ref<CodeName[]> = ref([]);
 
@@ -775,7 +790,7 @@ watch(searchQuery, (newQuery) => {
                 <div class="filter-block">
                   <div class="label-track">
                     <label>Subject</label>
-                    <label class="reset-btn" @click="selectedSubjects = []">Reset</label>
+                    <label class="reset-btn" @click="selectedSubjects = []; applyFilters()">Reset</label>
                   </div>
                   <div class="selection-track">
                     <Multiselect 
