@@ -19,6 +19,7 @@ export const sendEmail = functions.https.onRequest((req, res) => {
         headers: {
           "Content-Type": "application/json",
           "api-key": apiKey,
+          'accept': 'application/json',
         },
         body: JSON.stringify({
           sender: { email: "read.cycle.inv@gmail.com", name: "ReadCycle" },
