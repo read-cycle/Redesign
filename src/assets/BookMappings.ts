@@ -1,6 +1,4 @@
-// Auto-generated mappings (original case, unnormalized)
-
-export const isbnToTitle = {
+export const isbnToTitle:Record<string, string> = {
   "978-1398300255": "Cambridge Primary English Stage 2 Learner's Book",
   "978-1398300309": "Cambridge Primary English Stage 2 Activity Book",
   "978-1844142927": "Grammar 1 Pupil Book (in print letters)",
@@ -154,7 +152,7 @@ export const isbnToTitle = {
   "978-0008684099": "International Lower Secondary Computing Teacher’s Guide: Stage 8",
   "978-1382047258": "Oxford International Lower Secondary Computing: Student Book 9",
 };
-export const titleToIsbn = {
+export const titleToIsbn:Record<string, string> = {
   "Cambridge Primary English Stage 2 Learner's Book": "978-1398300255",
   "Cambridge Primary English Stage 2 Activity Book": "978-1398300309",
   "Grammar 1 Pupil Book (in print letters)": "978-1844142927",
@@ -309,7 +307,7 @@ export const titleToIsbn = {
   "International Lower Secondary Computing Teacher’s Guide: Stage 8": "978-0008684099",
   "Oxford International Lower Secondary Computing: Student Book 9": "978-1382047258",
 };
-export const isbnToSubject = {
+export const isbnToSubject:Record<string, string> = {
   "978-1398300255": "English",
   "978-1398300309": "English",
   "978-1844142927": "English",
@@ -463,7 +461,7 @@ export const isbnToSubject = {
   "978-0008684099": "Computing",
   "978-1382047258": "Computing",
 };
-export const titleToSubject = {
+export const titleToSubject:Record<string, string> = {
   "Cambridge Primary English Stage 2 Learner's Book": "English",
   "Cambridge Primary English Stage 2 Activity Book": "English",
   "Grammar 1 Pupil Book (in print letters)": "English",
@@ -618,7 +616,7 @@ export const titleToSubject = {
   "International Lower Secondary Computing Teacher’s Guide: Stage 8": "Computing",
   "Oxford International Lower Secondary Computing: Student Book 9": "Computing",
 };
-export const isbnToGrade = {
+export const isbnToGrade:Record<string, string> = {
   "978-1398300255": "g1",
   "978-1398300309": "g1",
   "978-1844142927": "g1",
@@ -772,7 +770,7 @@ export const isbnToGrade = {
   "978-0008684099": "bp",
   "978-1382047258": "bp",
 };
-export const titleToGrade = {
+export const titleToGrade:Record<string, string> = {
   "Cambridge Primary English Stage 2 Learner's Book": "g1",
   "Cambridge Primary English Stage 2 Activity Book": "g1",
   "Grammar 1 Pupil Book (in print letters)": "g1",
