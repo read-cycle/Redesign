@@ -336,7 +336,50 @@ async function nextSlide() {
         
           const docData = docSnap.data() as UploadDoc;
         
-          sendEmail(docData.uploaderEmail, 'Your book has been requested!', 'Yay!!')
+          sendEmail(
+            docData.uploaderEmail,
+            '📚 Someone Wants Your Book on ReadCycle!',
+            `
+            <div style="font-family: Arial, sans-serif; color: #333; padding: 16px;">
+              <h2 style="color: #3A7AFE;">Your Book Has Been Requested! 🔔</h2>
+                  
+              <p>Hello,</p>
+              <p>
+                Great news — a student is interested in a textbook you listed on ReadCycle!
+              </p>
+                  
+              <p style="margin-top: 12px;">
+                <strong>Book Details:</strong><br>
+                Title: ${docData.title ?? "N/A"}<br>
+                ISBN: ${docData.isbn?.code ?? "N/A"}<br>
+                Grade: ${docData.grade ?? "N/A"}<br>
+                Quantity Requested: ${buyerQuantity.value ?? "N/A"}
+              </p>
+                  
+              <p>
+                Please check the request in the ReadCycle dashboard and get in touch with the buyer using their preferred contact method.
+              </p>
+                  
+              <a 
+                href="https://readcycle.app"
+                target="_blank"
+                style="display: inline-block; margin-top: 16px; padding: 12px 20px; background-color: #3A7AFE; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 600;"
+              >
+                View Requests on ReadCycle
+              </a>
+                  
+              <p style="margin-top: 24px; font-size: 0.9rem; color: #777;">
+                Thank you for helping make education more accessible and sustainable for everyone! 📚♻️
+              </p>
+                  
+              <hr style="margin-top: 24px; border: none; border-top: 1px solid #eee;" />
+                  
+              <p style="font-size: 0.85rem; color: #777;">
+                © 2025 ReadCycle — Giving textbooks a second life.
+              </p>
+            </div>
+            `
+          );
 
           await addDoc(collection(db, "buyerRequested"), {
             ...docData,

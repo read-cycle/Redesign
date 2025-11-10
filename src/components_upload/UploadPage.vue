@@ -953,7 +953,49 @@ async function submitData() {
         });
 
         watchlistData.forEach((item) => {
-          sendEmail(item[1].buyerEmail, 'ReadCycle Confirmation Email', '<h1>Hello</h1>')
+          sendEmail(
+            item[1].buyerEmail,
+            '📚 A Book on Your ReadCycle Watchlist is Now Available!',
+            `
+            <div style="font-family: Arial, sans-serif; color: #333; padding: 16px;">
+              <h2 style="color: #3A7AFE;">Good news from ReadCycle! 🎉</h2>
+              <p>Hello,</p>
+              <p>
+                A book you’re watching is now available for exchange or purchase on ReadCycle!
+              </p>
+                  
+              <p style="margin-top: 12px;">
+                <strong>Book Details:</strong><br>
+                ISBN: ${selectedISBN.value?.code ?? "N/A"}<br>
+                Title: ${selectedTitle.value ?? "N/A"}<br>
+                Grade: ${selectedGrade.value ?? "N/A"}
+              </p>
+                  
+              <p>
+                Visit the ReadCycle platform to view the listing and contact the owner before it's gone.
+              </p>
+                  
+              <a 
+                href="https://readcycle.app" 
+                target="_blank"
+                style="display: inline-block; margin-top: 16px; padding: 12px 20px; background-color: #3A7AFE; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 600;"
+              >
+                View Book on ReadCycle
+              </a>
+                  
+              <p style="margin-top: 24px; font-size: 0.9rem; color: #777;">
+                You’re receiving this email because you added this book to your watchlist.<br>
+                If you no longer wish to receive notifications, please update your preferences in the app.
+              </p>
+                  
+              <hr style="margin-top: 24px; border: none; border-top: 1px solid #eee;" />
+                  
+              <p style="font-size: 0.85rem; color: #777;">
+                © 2025 ReadCycle — Making textbooks affordable and sustainable 📚♻️
+              </p>
+            </div>
+            `
+          );
         })
       });
 
