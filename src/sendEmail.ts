@@ -1,6 +1,6 @@
 export async function sendEmail(email: string, subject: string, body: string) {
   const res = await fetch(
-    "https://us-central1-book-exchange-22dd2.cloudfunctions.net/sendEmail",
+    "https://sendemail-i6sbso7noa-uc.a.run.app",
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
