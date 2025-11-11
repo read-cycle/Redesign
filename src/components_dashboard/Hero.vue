@@ -1,5 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/firebase-init';
 import CTACard from './CTACard.vue';
 import chats from '../assets/images/chats.svg'
 import browse from '../assets/images/browse2.svg'
