@@ -966,8 +966,8 @@ async function submitData() {
               <p style="margin-top: 12px;">
                 <strong>Book Details:</strong><br>
                 ISBN: ${selectedISBN.value?.code ?? "N/A"}<br>
-                Title: ${selectedTitle.value ?? "N/A"}<br>
-                Grade: ${selectedGrade.value ?? "N/A"}
+                Title: ${selectedTitle.value.name ?? "N/A"}<br>
+                Grade: ${selectedGrade.value.name ?? "N/A"}
               </p>
                   
               <p>

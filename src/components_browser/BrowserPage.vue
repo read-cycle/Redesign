@@ -350,9 +350,9 @@ async function nextSlide() {
                   
               <p style="margin-top: 12px;">
                 <strong>Book Details:</strong><br>
-                Title: ${docData.title ?? "N/A"}<br>
+                Title: ${docData.title?.name ?? "N/A"}<br>
                 ISBN: ${docData.isbn?.code ?? "N/A"}<br>
-                Grade: ${docData.grade ?? "N/A"}<br>
+                Grade: ${docData.grade?.name ?? "N/A"}<br>
                 Quantity Requested: ${buyerQuantity.value ?? "N/A"}
               </p>
                   
