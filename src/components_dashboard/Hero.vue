@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import CTACard from './CTACard.vue';
 import chats from '../assets/images/chats.svg'
 import browse from '../assets/images/browse2.svg'
