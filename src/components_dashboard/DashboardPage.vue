@@ -20,7 +20,7 @@ import checkSVG from '../assets/icons/check.svg'
 import Multiselect from 'vue-multiselect';
 import ISBN from 'isbn-utils';
 import Navbar from '../components/Navbar.vue';
-import { titleToIsbn } from 'BookMappings';
+import { isbnToGrade, isbnToSubject, isbnToTitle, titleToGrade, titleToIsbn, titleToSubject } from 'BookMappings';
 
 let userID: string | null = null;
 let userEmail: string | null = null;
@@ -121,6 +121,13 @@ async function acceptRequest() {
 
 const slideIcons = [bookSVG, infoSVG, checkSVG]
 
+const subjectOptions = ref(
+  Array.from(new Set(Object.values(isbnToSubject))).map((val) => ({
+    name: val as string,
+    code: (val as string).toLowerCase().replace(/\s+/g, '-')
+  }))
+);
+
 async function denyRequest() {
   if (!selectedNotif.value) return;
 
@@ -157,44 +164,141 @@ const activeSlide = ref(1)
 const isISBNDisabled = ref(false)
 const isTitleDisabled = ref(false)
 
-const ISBNOptions = ref([
-  { name: 'Ex1 Thing', code: 'ex1-thing' },
-  { name: 'Ex2 Thing', code: 'ex2-thing' },
-  { name: 'Ex3 Thing', code: 'ex3-thing' }
-]);
+const ISBNOptions = ref(
+  Object.keys(isbnToTitle).map(key => ({
+    name: key,
+    code: key
+  }))
+);
 
 const selectedISBN = ref();
 
 watch(selectedISBN, (newISBN) => {
   if(newISBN == null){
     isTitleDisabled.value = false;
-    selectedTitle.value = null;
     return
-  } else {
+  } else if(isISBNDisabled.value == false) {
     isTitleDisabled.value = true;
+    selectedTitle.value = null;
+  } else {
+    return
   }
-  console.log(newISBN.code)
-  const raw = newISBN?.code?.replace(/[-\s]/g, '')
 
+  if(isbnToSubject[newISBN.code]) {
+    const subject: string = isbnToSubject[newISBN.code];
+    selectedSubject.value = {
+      name: subject,
+      code: subject.toLowerCase().replace(/\s+/g, '-')
+    }
+  }
+
+  if (isbnToGrade[newISBN.code]) {
+    const grade: string = isbnToGrade[newISBN.code].toLowerCase();
+
+    console.log("GRADE")
+    console.log(grade)
+
+    let gradeName = grade;
+
+    if (grade.startsWith("g")) {
+      gradeName = `Grade ${grade.slice(1)}`;
+    } else if (grade === "bp") {
+      gradeName = "Bridge Program";
+    }
+
+    selectedGrade.value = {
+      name: gradeName,
+      code: grade
+    };
+  }
+
+  if(isbnToTitle[newISBN.code]) {
+    const title: string = isbnToTitle[newISBN.code];
+    selectedTitle.value = {
+      name: title,
+      code: title.toLowerCase().replace(/\s+/g, '-')
+    };
+    return
+  }
+
+  const raw = newISBN?.code?.replace(/[-\s]/g, '');
+  
   if (ISBN.isValid(raw)) {
     const isbnObj = ISBN.parse(raw) as ISBN.ISBN;
-    console.log('Valid ISBN:', isbnObj.asIsbn13())
-    fetch(`https://openlibrary.org/isbn/${isbnObj.asIsbn13()}.json`)
+    const isbn13 = isbnObj.asIsbn13();
+    console.log('Valid ISBN:', isbn13);
+  
+    const googleURL = `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn13}`;
+    const openLibURL = `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn13}&jscmd=data&format=json`;
+  
+    fetch(googleURL)
       .then(res => res.json())
       .then(data => {
-        console.log(data)
-        const title: string = data.title
-        selectedTitle.value = {
-          name: title,
-          code: title.toLowerCase().replace(/\s+/g, '-')
-        };
+        console.log("Google Books response:", data);
+      
+        if (data.totalItems > 0) {
+          const book = data.items[0].volumeInfo;
+          const title = book.title;
+        
+          selectedTitle.value = {
+            name: title,
+            code: title.toLowerCase().replace(/\s+/g, '-')
+          };
+        } else {
+          console.log("Google Books: No items found. Trying Open Library...");
+          return fetch(openLibURL)
+            .then(res => res.json())
+            .then(olData => {
+              console.log("Open Library response:", olData);
+            
+              const key = `ISBN:${isbn13}`;
+              if (olData[key]?.title) {
+                const title = olData[key].title;
+                selectedTitle.value = {
+                  name: title,
+                  code: title.toLowerCase().replace(/\s+/g, '-')
+                };
+              } else {
+                console.log("Open Library: No book found.");
+                selectedTitle.value = null;
+              }
+            });
+        }
       })
+      .catch(err => {
+        console.error("Google Books error:", err);
+        console.log("Falling back to Open Library...");
+      
+        fetch(openLibURL)
+          .then(res => res.json())
+          .then(olData => {
+            const key = `ISBN:${isbn13}`;
+            if (olData[key]?.title) {
+              const title = olData[key].title;
+              selectedTitle.value = {
+                name: title,
+                code: title.toLowerCase().replace(/\s+/g, '-')
+              };
+            } else {
+              console.log("Open Library also failed.");
+              selectedTitle.value = null;
+            }
+          })
+          .catch(err => {
+            console.error("Both ISBN lookups failed:", err);
+            selectedTitle.value = null;
+          });
+      });
+    
   } else {
-    console.log('Invalid ISBN')
+    console.log('Invalid ISBN');
+    selectedTitle.value = null;
   }
-})
+});
 
 const selectedTitle = ref();
+
+const selectedSubject = ref();
 
 watch(selectedTitle, (newTitle) => {
   if(newTitle == null){
@@ -203,6 +307,42 @@ watch(selectedTitle, (newTitle) => {
   } else if(isTitleDisabled.value == false) {
     isISBNDisabled.value = true;
     selectedISBN.value = null;
+  }
+
+  
+  if(titleToIsbn[newTitle.name]) {
+    const isbn: string = titleToIsbn[newTitle.name];
+    selectedISBN.value = {
+      name: isbn,
+      code: isbn.replace('-', '')
+    };
+  }
+
+  if(titleToSubject[newTitle.name]) {
+    const subject: string = titleToSubject[newTitle.name];
+    selectedSubject.value = {
+      name: subject,
+      code: subject.toLowerCase().replace(/\s+/g, '-')
+    }
+  }
+
+  if (titleToGrade[newTitle.name]) {
+    const grade: string = titleToGrade[newTitle.name].toLowerCase();
+
+    console.log(grade)
+
+    let gradeName = grade;
+
+    if (grade.startsWith("g")) {
+      gradeName = `Grade ${grade.slice(1)}`;
+    } else if (grade === "bp") {
+      gradeName = "Bridge Program";
+    }
+
+    selectedGrade.value = {
+      name: gradeName,
+      code: grade
+    };
   }
 })
 
@@ -342,6 +482,26 @@ const slides = [
                 }
                 addItem(tagObj, gradeOptions, selectedGrade, false)
               }
+            }
+          }
+        ]
+      },
+      {
+        label: 'Subject',
+        data: [
+          {
+            component: Multiselect,
+            props: {
+              id: "subjectMS",
+              name: "subjectMS",
+              modelValue: selectedSubject,
+              'onUpdate:modelValue': (val: { name: string; code: string; }[]) => selectedSubject.value = val,
+              options: subjectOptions,
+              searchable: true,
+              placeholder: 'Enter Subject',
+              class: 'multiselect',
+              label: 'name',
+              trackBy: 'code'
             }
           }
         ]

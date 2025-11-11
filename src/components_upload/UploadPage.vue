@@ -214,8 +214,7 @@ watch(selectedISBN, (newISBN) => {
 const selectedTitle = ref();
 
 watch(selectedTitle, (newTitle) => {
-  console.log("NEW TITLE")
-  console.log(newTitle)
+
   if(newTitle == null){
     isISBNDisabled.value = false;
     return
