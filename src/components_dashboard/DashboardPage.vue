@@ -672,6 +672,7 @@ async function nextSlide() {
           buyerID: userID,
           title: selectedTitle.value,
           tags: selectedTags.value,
+          subject: selectedSubject.value,
           isbn: selectedISBN.value,
           grade: selectedGrade.value,
           timestamp: serverTimestamp(),
