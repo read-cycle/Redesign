@@ -155,10 +155,6 @@ const buyerName = ref('')
 
 const buyerQuantity = ref(1)
 
-function updateProgress(delta: number) {
-  progresses.value[activeSlide.value - 1] = Math.min(100, Math.max(0, progresses.value[activeSlide.value - 1] + delta))
-}
-
 const activeSlide = ref(1)
 
 const isISBNDisabled = ref(false)
@@ -174,6 +170,7 @@ const ISBNOptions = ref(
 const selectedISBN = ref();
 
 watch(selectedISBN, (newISBN) => {
+  console.log("ISBN Fire")
   if(newISBN == null){
     isTitleDisabled.value = false;
     return
@@ -195,9 +192,6 @@ watch(selectedISBN, (newISBN) => {
   if (isbnToGrade[newISBN.code]) {
     const grade: string = isbnToGrade[newISBN.code].toLowerCase();
 
-    console.log("GRADE")
-    console.log(grade)
-
     let gradeName = grade;
 
     if (grade.startsWith("g")) {
@@ -213,11 +207,13 @@ watch(selectedISBN, (newISBN) => {
   }
 
   if(isbnToTitle[newISBN.code]) {
+    console.log("Found in mapping")
     const title: string = isbnToTitle[newISBN.code];
     selectedTitle.value = {
       name: title,
       code: title.toLowerCase().replace(/\s+/g, '-')
     };
+    console.log(title)
     return
   }
 
@@ -307,8 +303,9 @@ watch(selectedTitle, (newTitle) => {
   } else if(isTitleDisabled.value == false) {
     isISBNDisabled.value = true;
     selectedISBN.value = null;
+  } else {
+    return
   }
-
   
   if(titleToIsbn[newTitle.name]) {
     const isbn: string = titleToIsbn[newTitle.name];
@@ -759,42 +756,38 @@ onMounted(async () => {
       [newName, newDelivery, newContact, newQuantity, newISBN, newGrade, newTitle, newTags],
       [oldName, oldDelivery, oldContact, oldQuantity, oldISBN, oldGrade, oldTitle, oldTags]
     ) => {    
-      let delta = 0;
+      if (newISBN && !oldISBN) progresses.value[0] += 25;
+      if (!newISBN && oldISBN) progresses.value[0] -= 25;
 
-      if (newISBN && !oldISBN) delta += 25;
-      if (!newISBN && oldISBN) delta -= 25;
+      if (newTitle && !oldTitle) progresses.value[0] += 25;
+      if (!newTitle && oldTitle) progresses.value[0] -= 25;
 
-      if (newTitle && !oldTitle) delta += 25;
-      if (!newTitle && oldTitle) delta -= 25;
-
-      if (newGrade && !oldGrade) delta += 25;
-      if (!newGrade && oldGrade) delta -= 25;
+      if (newGrade && !oldGrade) progresses.value[0] += 25;
+      if (!newGrade && oldGrade) progresses.value[0] -= 25;
 
       const newTagsLen = newTags.length;
       const oldTagsLen = oldTags.length;
 
-      if (newTagsLen > 0 && oldTagsLen === 0) delta += 25;
-      if (newTagsLen === 0 && oldTagsLen > 0) delta -= 25;
+      if (newTagsLen > 0 && oldTagsLen === 0) progresses.value[0] += 25;
+      if (newTagsLen === 0 && oldTagsLen > 0) progresses.value[0] -= 25;
 
-      if (newName && !oldName) delta += 20;
-      if (!newName && oldName) delta -= 20;
+      if (newName && !oldName) progresses.value[1] += 100/3;
+      if (!newName && oldName) progresses.value[1] -= 100/3;
 
-      if (newQuantity && !oldQuantity) delta += 100/3;
-      if (!newQuantity && oldQuantity) delta -= 100/3;
+      if (newQuantity && !oldQuantity) progresses.value[1] += 100/3;
+      if (!newQuantity && oldQuantity) progresses.value[1] -= 100/3;
 
       const newContactPreferenceLen = Array.isArray(newContact) ? newContact.length : 0;
       const oldContactPreferenceLen = Array.isArray(oldContact) ? oldContact.length : 0;
 
-      if (newContactPreferenceLen > 0 && oldContactPreferenceLen === 0) delta += 100/3;
-      if (newContactPreferenceLen === 0 && oldContactPreferenceLen > 0) delta -= 100/3;
+      if (newContactPreferenceLen > 0 && oldContactPreferenceLen === 0) progresses.value[1] += 100/3;
+      if (newContactPreferenceLen === 0 && oldContactPreferenceLen > 0) progresses.value[1] -= 100/3;
 
       const newDeliveryLen = newDelivery.length;
       const oldDeliveryLen = oldDelivery.length;
 
-      if (newDeliveryLen > 0 && oldDeliveryLen === 0) delta += 100/3;
-      if (newDeliveryLen === 0 && oldDeliveryLen > 0) delta -= 100/3;
-
-      updateProgress(delta);
+      if (newDeliveryLen > 0 && oldDeliveryLen === 0) progresses.value[1] += 100/3;
+      if (newDeliveryLen === 0 && oldDeliveryLen > 0) progresses.value[1] -= 100/3;
   })
 })
 function deepUnref(obj: any): any {
@@ -912,7 +905,7 @@ function closeModal() {
                 <div class="confirmation-container" v-if="activeSlide === 3">
                   <div class="icon-container"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-big-icon lucide-circle-check-big"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></div>
                   <div class="confirmation-text">
-                    <p>Your request has been sent!<br></br>We'll email you when we receive a response!</p>
+                    <p>Added to watchlist!<br></br>We'll email you when we find this book!</p>
                   </div>
                 </div>
                 <div class="btn-container" v-if="activeSlide !== 3"><button class="proceed-btn" @click="nextSlide()">Proceed</button></div>
