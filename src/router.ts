@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import LandingPage from './components_landing/LandingPage.vue'
 import LoginPage from './components_login/LoginPage.vue'
 import DashboardPage from './components_dashboard/DashboardPage.vue'
@@ -16,13 +16,13 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHashHistory(),  //NOTE: Web Hash History is temp for static host (github pages), change when buying domain
+  history: createWebHistory(),
   routes,
 })
 
 router.afterEach((to) => {
   if (to.meta?.title) {
-    document.title = to.meta.title
+    document.title = to.meta.title as string
   } else {
     document.title = 'ReadCycle'
   }
