@@ -76,9 +76,6 @@ const slideIcons = [bookSVG, priceSVG, infoSVG, boxSVG, photoSVG]
 
 const progresses: Ref<number[]> = ref([0, 0, 0, 100, 0])
 
-const isISBNDisabled = ref(false)
-const isTitleDisabled = ref(false)
-
 const ISBNOptions = ref(
   Object.keys(isbnToTitle).map(key => ({
     name: key,
@@ -89,17 +86,8 @@ const ISBNOptions = ref(
 const selectedISBN = ref();
 
 watch(selectedISBN, (newISBN) => {
-  if(newISBN == null){
-    isTitleDisabled.value = false;
-    return
-  } else if(isISBNDisabled.value == false) {
-    isTitleDisabled.value = true;
-    selectedTitle.value = null;
-  } else {
-    return
-  }
 
-  if(isbnToSubject[newISBN.code]) {
+  if(isbnToSubject[newISBN.code] && selectedSubject.value == null) {
     const subject: string = isbnToSubject[newISBN.code];
     selectedSubject.value = {
       name: subject,
@@ -107,7 +95,7 @@ watch(selectedISBN, (newISBN) => {
     }
   }
 
-  if (isbnToGrade[newISBN.code]) {
+  if (isbnToGrade[newISBN.code] && selectedGrade == null) {
     const grade: string = isbnToGrade[newISBN.code].toLowerCase();
 
     console.log("GRADE")
@@ -127,16 +115,17 @@ watch(selectedISBN, (newISBN) => {
     };
   }
 
-  if(isbnToTitle[newISBN.code]) {
-    const title: string = isbnToTitle[newISBN.code];
-    selectedTitle.value = {
-      name: title,
-      code: title.toLowerCase().replace(/\s+/g, '-')
-    };
-    return
-  }
+  if(selectedTitle == null) {
+    if(isbnToTitle[newISBN.code]) {
+      const title: string = isbnToTitle[newISBN.code];
+      selectedTitle.value = {
+        name: title,
+        code: title.toLowerCase().replace(/\s+/g, '-')
+      };
+      return
+    }
 
-  const raw = newISBN?.code?.replace(/[-\s]/g, '');
+    const raw = newISBN?.code?.replace(/[-\s]/g, '');
   
   if (ISBN.isValid(raw)) {
     const isbnObj = ISBN.parse(raw) as ISBN.ISBN;
@@ -209,23 +198,14 @@ watch(selectedISBN, (newISBN) => {
     console.log('Invalid ISBN');
     selectedTitle.value = null;
   }
+  }
 });
 
 const selectedTitle = ref();
 
 watch(selectedTitle, (newTitle) => {
 
-  if(newTitle == null){
-    isISBNDisabled.value = false;
-    return
-  } else if(isTitleDisabled.value == false) {
-    isISBNDisabled.value = true;
-    selectedISBN.value = null;
-  } else {
-    return
-  }
-
-  if(titleToIsbn[newTitle.name]) {
+  if(titleToIsbn[newTitle.name] && selectedISBN == null) {
     const isbn: string = titleToIsbn[newTitle.name];
     selectedISBN.value = {
       name: isbn,
@@ -233,7 +213,7 @@ watch(selectedTitle, (newTitle) => {
     };
   }
 
-  if(titleToSubject[newTitle.name]) {
+  if(titleToSubject[newTitle.name] && selectedSubject == null) {
     const subject: string = titleToSubject[newTitle.name];
     selectedSubject.value = {
       name: subject,
@@ -241,7 +221,7 @@ watch(selectedTitle, (newTitle) => {
     }
   }
 
-  if (titleToGrade[newTitle.name]) {
+  if (titleToGrade[newTitle.name] && selectedGrade == null) {
     const grade: string = titleToGrade[newTitle.name].toLowerCase();
 
     console.log(grade)
@@ -295,30 +275,6 @@ const titleOptions = ref(
   }))
 );
 
-let tagOptions: Ref<{ name: string; code: string }[]> = ref([
-  { name: "Cambridge", code: "cambridge" },
-  { name: "Oxford", code: "oxford" },
-  { name: "Hodder", code: "hodder" },
-  { name: "Viva", code: "viva" },
-  { name: "Saral", code: "saral" },
-  { name: "Collins", code: "collins" },
-  { name: "Primary", code: "primary" },
-  { name: "Lower Secondary", code: "lower-secondary" },
-  { name: "IGCSE", code: "igcse" },
-  { name: "AS Level", code: "as-level" },
-  { name: "A Level", code: "a-level" },
-  { name: "Bridge Program", code: "bridge-program" },
-  { name: "Coursebook", code: "coursebook" },
-  { name: "Learner's Book", code: "learners-book" },
-  { name: "Activity Book", code: "activity-book" },
-  { name: "Workbook", code: "workbook" },
-  { name: "Exam Preparation", code: "exam-preparation" },
-  { name: "Digital Access", code: "digital-access" }
-]);
-
-
-let selectedTags: Ref<{name: string, code: string}[]> = ref([]);
-
 const conditionOptions: Ref<{name: string, code: string}[]> = ref([
   { name: "new", code: "new" },
   { name: "like new", code: "like-new" },
@@ -330,53 +286,9 @@ const conditionOptions: Ref<{name: string, code: string}[]> = ref([
 
 const selectedCondition: Ref<{name: string, code: string} | undefined> = ref();
 
-const priceMode: Ref<{name: string, code: string} | undefined> = ref();
-
-const priceOptions = ref([
-  { name: 'Free', code: 'free' },
-  { name: 'Priced', code: 'priced' }
-])
-
-const conditionDetailTags = ref([
-  { name: "no markings", code: "no-markings" },
-  { name: "highlighted", code: "highlighted" },
-  { name: "annotated", code: "annotated" },
-  { name: "dog-eared", code: "dog-eared" },
-  { name: "torn pages", code: "torn-pages" },
-  { name: "loose binding", code: "loose-binding" },
-  { name: "stained", code: "stained" },
-  { name: "water damaged", code: "water-damaged" },
-  { name: "faded cover", code: "faded-cover" },
-  { name: "creased cover", code: "creased-cover" },
-  { name: "yellowed pages", code: "yellowed-pages" },
-  { name: "missing cover", code: "missing-cover" },
-  { name: "sticker residue", code: "sticker-residue" },
-  { name: "worn edges", code: "worn-edges" },
-  { name: "school stamp", code: "school-stamp" },
-  { name: "missing pages", code: "missing-pages" },
-  { name: "missing CD", code: "missing-cd" },
-  { name: "name written inside", code: "name-written-inside" }
-]);
-
-const conditionDetails: Ref<{name: string, code: string}[]> = ref([]);
-
-const deliveryPreferenceOptions = [{ name: 'Meetup', code: 'meetup' }, { name: 'Delivery', code: 'delivery' }]
-
-const deliveryPreference: Ref<{name: string, code: string}[]> = ref([]);
-
-const price = ref(0);
-
 const quantity = ref(0);
 
 const uploaderName = ref('');
-
-const contactPreferenceOptions =  [{ name: 'Chat', code: 'chat' }, { name: 'Email', code: 'email' }, { name: 'Phone', code: 'phone' }]
-
-const contactPreference: Ref<{name: string, code: string}[]> = ref([]);
-
-const listingImage: Ref<File | null> = ref(null);
-
-const extraImages: Ref<File[] | null> = ref(null);
 
 const extraInfo = ref('');
 
@@ -401,7 +313,6 @@ const slides = [
               class: 'multiselect',
               label: 'name',
               trackBy: 'code',
-              disabled: isISBNDisabled,
               onTag: (newTag: string) => {
                 const tagObj = {
                   name: newTag,
@@ -430,7 +341,6 @@ const slides = [
               class: 'multiselect',
               label: 'name',
               trackBy: 'code',
-              disabled: isTitleDisabled,
               onTag: (newTag: string) => {
                 const tagObj = {
                   name: newTag,
@@ -482,36 +392,6 @@ const slides = [
           }
         ]
       },
-      {
-        label: 'Tags',
-        data: [
-          {
-            component: Multiselect,
-            props: {
-              id: "tagging",
-              name: "tagger",
-              modelValue: selectedTags,
-              'onUpdate:modelValue': (val: { name: string; code: string; }[]) => selectedTags.value = val,
-              options: tagOptions,
-              multiple: true,
-              taggable: true,
-              searchable: true,
-              placeholder: 'Type to search or add tag',
-              tagPlaceholder: 'Add this as new tag',
-              label: 'name',
-              trackBy: 'code',
-              class: 'multiselect',
-              onTag: (newTag: string) => {
-                const tagObj = {
-                  name: newTag,
-                  code: newTag.replace(/[\s-]/g, '')
-                }
-                addItem(tagObj, tagOptions, selectedTags, true)
-              }
-            }
-          }
-        ]
-      }
     ]
   },
   {
@@ -543,70 +423,6 @@ const slides = [
                   addItem(tagObj, conditionOptions, selectedCondition, false);
                 }              
               }
-            }
-          }
-        ]
-      },
-      {
-        label: 'Condition (Tags)',
-        data: [
-          {
-            component: Multiselect,
-            props: {
-              id: "conditionTags",
-              name: "conditionTags",
-              modelValue: conditionDetails,
-              'onUpdate:modelValue': (val: { name: string; code: string; }[]) => conditionDetails.value = val,
-              options: conditionDetailTags,
-              multiple: true,
-              taggable: true,
-              searchable: true,
-              placeholder: 'Type to search or add tag',
-              tagPlaceholder: 'Add this as new tag',
-              label: 'name',
-              trackBy: 'code',
-              class: 'multiselect',
-              onTag: (newTag: string) => {
-                const tagObj = {
-                  name: newTag,
-                  code: newTag.replace(/[\s-]/g, '')
-                }
-                addItem(tagObj, conditionDetailTags, conditionDetails, true)
-              }
-            }
-          }
-        ]
-      },
-      {
-        label: 'Free or Priced',
-        data: [
-          {
-            component: Multiselect,
-            props: {
-              modelValue: priceMode,
-              'onUpdate:modelValue': (val: { name: string; code: string; }) => priceMode.value = val,
-              options: priceOptions,
-              class: 'multiselect',
-              label: 'name',
-              trackBy: 'code',
-              placeholder: 'Select pricing type'
-            }
-          }
-        ]
-      },
-      {
-        label: 'Price per unit (₹)',
-        data: [
-          {
-            component: 'input',
-            props: {
-              value: price,
-              onInput: (e: Event) => price.value = +(e.target as HTMLInputElement).value,
-              type: 'number',
-              placeholder: 'Enter your price',
-              min: 0,
-              class: 'form-input price-input',
-              disabled: computed(() => priceMode?.value?.code === 'free')
             }
           }
         ]
@@ -647,48 +463,6 @@ const slides = [
           }
         ]
       },
-      {
-        label: 'Contact Preference',
-        data: [
-          {
-            component: Multiselect,
-            props: {
-              modelValue: contactPreference,
-              'onUpdate:modelValue': (val: { name: string; code: string; }[]) => contactPreference.value = val,
-              options: contactPreferenceOptions,
-              placeholder: 'Choose contact preference',
-              multiple: true,
-              taggable: true,
-              searchable: true,
-              tagPlaceholder: 'Add this as new tag',
-              label: 'name',
-              trackBy: 'code',
-              class: 'multiselect',
-            }
-          }
-        ]
-      },
-      {
-        label: 'Delivery Preference',
-        data: [
-          {
-            component: Multiselect,
-            props: {
-              modelValue: deliveryPreference,
-              'onUpdate:modelValue': (val: { name: string; code: string; }[]) => deliveryPreference.value = val,
-              options: deliveryPreferenceOptions,
-              placeholder: 'Choose delivery preference',
-              multiple: true,
-              taggable: true,
-              searchable: true,
-              tagPlaceholder: 'Add this as new tag',
-              label: 'name',
-              trackBy: 'code',
-              class: 'multiselect',
-            }
-          }
-        ]
-      }
     ]
   },
   {
@@ -704,43 +478,6 @@ const slides = [
               onInput: (e: Event) => extraInfo.value = (e.target as HTMLInputElement).value,
               type: 'text',
               min: 0
-            }
-          }
-        ]
-      }
-    ]
-  },
-  {
-    header: 'Photos',
-    sections: [
-      {
-        label: 'Listing Image',
-        data: [
-          {
-            component: ImageUploader,
-            props: {
-              modelValue: listingImage,
-              'onUpdate:modelValue': (val: File) => listingImage.value = val,
-              required: true,
-              placeholder: 'Upload listing image',
-              class: 'image-uploader',
-              multiple: false
-            }
-          }
-        ]
-      },
-      {
-        label: 'Extra Images',
-        data: [
-          {
-            component: ImageUploader,
-            props: {
-              modelValue: extraImages,
-              'onUpdate:modelValue': (val: File[]) => extraImages.value = val,
-              multiple: true,
-              required: false,
-              placeholder: 'Upload extra images',
-              class: 'image-uploader'
             }
           }
         ]
@@ -766,15 +503,6 @@ const slides = [
               text: computed(() => `Grade: ${selectedGrade.value?.name || 'Not specified'}`),
               class: 'confirmation-field'
             }
-          },
-          {
-            component: 'p',
-            props: {
-              text: computed(() =>
-                `Tags: ${selectedTags.value.length ? selectedTags.value.map(tag => tag.name).join(', ') : 'None'}`
-              ),
-              class: 'confirmation-field'
-            }
           }
         ]
       },
@@ -787,15 +515,6 @@ const slides = [
               text: computed(() => `Condition: ${selectedCondition.value?.name || 'Not specified'}`),
               class: 'confirmation-field'
             }
-          },
-          {
-            component: 'p',
-            props: {
-              text: computed(() =>
-                `Condition Details: ${conditionDetails.value.length ? conditionDetails.value.map(tag => tag.name).join(', ') : 'None'}`
-              ),
-              class: 'confirmation-field'
-            }
           }
         ]
       },
@@ -805,77 +524,7 @@ const slides = [
           {
             component: 'p',
             props: {
-              text: computed(() => `Price Mode: ${priceMode.value?.name || 'Not specified'}`),
-              class: 'confirmation-field'
-            }
-          },
-          {
-            component: 'p',
-            props: {
-              text: computed(() => `Price: ${price.value != null ? `₹${price.value}` : 'Not specified'}`),
-              class: 'confirmation-field'
-            }
-          },
-          {
-            component: 'p',
-            props: {
               text: computed(() => `Quantity: ${quantity.value != null ? quantity.value : 'Not specified'}`),
-              class: 'confirmation-field'
-            }
-          }
-        ]
-      },
-      {
-        label: 'Delivery',
-        data: [
-          {
-            component: 'p',
-            props: {
-              text: computed(() => `Delivery Preference: ${deliveryPreference.value.length
-                      ? deliveryPreference.value.map(tag => tag.name).join(', ')
-                      : 'None' }`),
-              class: 'confirmation-field'
-            }
-          }
-        ]
-      },
-      {
-        label: 'Contact',
-        data: [
-          {
-            component: 'p',
-            props: {
-              text: computed(() => `Uploader Name: ${uploaderName.value || 'Not specified'}`),
-              class: 'confirmation-field'
-            }
-          },
-          {
-            component: 'p',
-            props: {
-              text: computed(() => `Contact Preference: ${contactPreference.value.length ? contactPreference.value.map(tag => tag.name).join(', ') : 'None'}`),
-              class: 'confirmation-field'
-            }
-          }
-        ]
-      },
-      {
-        label: 'Photos',
-        data: [
-          {
-            component: 'p',
-            props: {
-              text: computed(() => `Listing Image: ${listingImage.value?.name || 'Not uploaded'}`),
-              class: 'confirmation-field'
-            }
-          },
-          {
-            component: 'p',
-            props: {
-              text: computed(() =>
-                `Extra Images: ${Array.isArray(extraImages.value) && extraImages.value.length
-                  ? extraImages.value.map(img => img.name).join(', ')
-                  : 'None'}`
-              ),
               class: 'confirmation-field'
             }
           }
@@ -894,108 +543,18 @@ function nextSlide() {
 async function submitData() {
   if (progresses.value.every(x => x >= 100)) {
     try {
-      const docRef = await addDoc(collection(db, "uploadPool"), {
+      const docRef = await addDoc(collection(db, "donationPool"), {
         isbn: selectedISBN.value || null,
         title: selectedTitle.value || null,
         grade: selectedGrade.value || null,
-        tags: selectedTags.value || [],
         subject: selectedSubject.value || null,
         condition: selectedCondition.value || null,
-        priceMode: priceMode.value || null,
-        conditionDetails: conditionDetails.value || [],
-        deliveryPreference: deliveryPreference.value || "",
-        price: price.value || 0,
         quantity: quantity.value || 0,
-        uploaderName: uploaderName.value || "",
-        contactPreference: contactPreference.value || "",
+        uploaderName: uploaderName.value || "Anonymous",
         extraInfo: extraInfo.value || "",
         uploaderID: userID,
-        uploaderEmail: userEmail
-      });
-
-      const listingImageUrls: string[] = [];
-      const extraImagesUrls: string[] = [];
-
-      if (listingImage.value) {
-        const listingImageRef = storageRef(storage, `uploadPool/${docRef.id}/listingImage/${listingImage.value.name}`);
-        await uploadBytes(listingImageRef, listingImage.value);
-        const url = await getDownloadURL(listingImageRef);
-        listingImageUrls.push(url);
-      }
-
-      if (extraImages.value && extraImages.value.length > 0) {
-        for (const file of extraImages.value) {
-          const extraImageRef = storageRef(storage, `uploadPool/${docRef.id}/extraImages/${file.name}`);
-          await uploadBytes(extraImageRef, file);
-          const url = await getDownloadURL(extraImageRef);
-          extraImagesUrls.push(url);
-        }
-      }
-
-      await updateDoc(doc(db, "uploadPool", docRef.id), {
-        listingImage: listingImageUrls,
-        extraImages: extraImagesUrls,
+        uploaderEmail: userEmail,
         timestamp: serverTimestamp()
-      });
-
-      const watchlistQuery = query(
-        collection(db, 'watchlist'),
-        where('isbn.code', '==', selectedISBN.value.code)
-      )
-
-      let watchlistData: [DocumentReference, WatchlistDoc][] = []
-
-      getDocs(watchlistQuery).then((result: { docs: any[]; }) => {
-        watchlistData = result.docs.map((doc) => {
-          const data = doc.data() as WatchlistDoc;
-          return [doc.ref, { id: doc.id, ...data }] as unknown as [DocumentReference, WatchlistDoc];
-        });
-
-        watchlistData.forEach((item) => {
-          sendEmail(
-            item[1].buyerEmail,
-            '📚 A Book on Your ReadCycle Watchlist is Now Available!',
-            `
-            <div style="font-family: Arial, sans-serif; color: #333; padding: 16px;">
-              <h2 style="color: #3A7AFE;">Good news from ReadCycle! 🎉</h2>
-              <p>Hello,</p>
-              <p>
-                A book you’re watching is now available for exchange or purchase on ReadCycle!
-              </p>
-                  
-              <p style="margin-top: 12px;">
-                <strong>Book Details:</strong><br>
-                ISBN: ${selectedISBN.value?.code ?? "N/A"}<br>
-                Title: ${selectedTitle.value.name ?? "N/A"}<br>
-                Grade: ${selectedGrade.value.name ?? "N/A"}
-              </p>
-                  
-              <p>
-                Visit the ReadCycle platform to view the listing and contact the owner before it's gone.
-              </p>
-                  
-              <a 
-                href="https://readcycle.app" 
-                target="_blank"
-                style="display: inline-block; margin-top: 16px; padding: 12px 20px; background-color: #3A7AFE; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 600;"
-              >
-                View Book on ReadCycle
-              </a>
-                  
-              <p style="margin-top: 24px; font-size: 0.9rem; color: #777;">
-                You’re receiving this email because you added this book to your watchlist.<br>
-                If you no longer wish to receive notifications, please update your preferences in the app.
-              </p>
-                  
-              <hr style="margin-top: 24px; border: none; border-top: 1px solid #eee;" />
-                  
-              <p style="font-size: 0.85rem; color: #777;">
-                © 2025 ReadCycle — Making textbooks affordable and sustainable 📚♻️
-              </p>
-            </div>
-            `
-          );
-        })
       });
 
       window.alert("Submit Successful.");
@@ -1008,6 +567,7 @@ async function submitData() {
     console.log(progresses.value);
   }
 }
+
 function useTeleportDropdown(el: HTMLElement) {
   let dropdown: HTMLElement | null = null
   const observer = new MutationObserver(() => {
@@ -1073,24 +633,18 @@ onMounted(() => {
   onBeforeUnmount(() => observer.disconnect())
 })
 onMounted(() => {
-    watch([selectedISBN, selectedTitle, selectedGrade, selectedSubject, selectedTags, selectedCondition, conditionDetails, priceMode, price, quantity, deliveryPreference, uploaderName, contactPreference, listingImage, extraImages], ([newISBN, newTitle, newGrade, newSubject, newTags, newCondition, newConditionDetails, newPriceMode, newPrice, newQuantity, newDeliveryPreference, newUploaderName, newContactPreference, newListingImage, newExtraImages], [oldISBN, oldTitle, oldGrade, oldSubject, oldTags, oldCondition, oldConditionDetails, oldPriceMode, oldPrice, oldQuantity, oldDeliveryPreference, oldUploaderName, oldContactPreference, oldListingImage, oldExtraImages]) => {
-        if (newISBN && !oldISBN) progresses.value[0] += 20;
-        if (!newISBN && oldISBN) progresses.value[0] -= 20;
+    watch([selectedISBN, selectedTitle, selectedGrade, selectedSubject, selectedCondition, quantity, uploaderName], ([newISBN, newTitle, newGrade, newSubject, newCondition, newQuantity, newUploaderName], [oldISBN, oldTitle, oldGrade, oldSubject, oldCondition, oldQuantity, oldUploaderName]) => {
+        if (newISBN && !oldISBN) progresses.value[0] += 25;
+        if (!newISBN && oldISBN) progresses.value[0] -= 25;
 
-        if (newTitle && !oldTitle) progresses.value[0] += 20;
-        if (!newTitle && oldTitle) progresses.value[0] -= 20;
+        if (newTitle && !oldTitle) progresses.value[0] += 25;
+        if (!newTitle && oldTitle) progresses.value[0] -= 25;
 
-        if (newGrade && !oldGrade) progresses.value[0] += 20;
-        if (!newGrade && oldGrade) progresses.value[0] -= 20;
+        if (newGrade && !oldGrade) progresses.value[0] += 25;
+        if (!newGrade && oldGrade) progresses.value[0] -= 25;
 
-        if (newSubject && !oldSubject) progresses.value[0] += 20;
-        if (!newSubject && oldSubject) progresses.value[0] -= 20;
-
-        const newTagsLen = newTags.length;
-        const oldTagsLen = oldTags.length;
-
-        if (newTagsLen > 0 && oldTagsLen === 0) progresses.value[0] += 20;
-        if (newTagsLen === 0 && oldTagsLen > 0) progresses.value[0] -= 20;
+        if(newSubject && !oldSubject) progresses.value[0] += 25;
+        if(!newSubject && oldSubject) progresses.value[0] -= 25;
 
         if (newCondition && !oldCondition) progresses.value[1] += 20;
         if (!newCondition && oldCondition) progresses.value[1] -= 20;
@@ -1138,7 +692,13 @@ onMounted(() => {
         const oldExtraImagesLen = Array.isArray(oldExtraImages) ? oldExtraImages.length : 0;
 
         if (newExtraImagesLen > 0 && oldExtraImagesLen === 0) progresses.value[4] += 50;
-        if (newExtraImagesLen === 0 && oldExtraImagesLen > 0) progresses.value[4] -= 50;;
+        if (newExtraImagesLen === 0 && oldExtraImagesLen > 0) progresses.value[4] -= 50;
+
+        const newTagsLen = newTags.length;
+        const oldTagsLen = oldTags.length;
+
+        if (newTagsLen > 0 && oldTagsLen === 0) progresses.value[0] += 25;
+        if (newTagsLen === 0 && oldTagsLen > 0) progresses.value[0] -= 25;
     })
 })
 function getText(dataComp: { props: any }) {
