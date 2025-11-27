@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import Multiselect from 'vue-multiselect'
 import Navbar from '../components/Navbar.vue';
-import {  onMounted, ref, watch, type Ref, computed, isRef, type ComputedRef, onBeforeUnmount  } from 'vue';
-import bookSVG from '../assets/icons/book.svg'
-import priceSVG from '../assets/icons/pricing.svg'
-import boxSVG from '../assets/icons/box.svg'
-import infoSVG from '../assets/icons/info.svg'
-import photoSVG from '../assets/icons/photo.svg'
+import { onMounted, ref, watch, type Ref, computed, isRef, type ComputedRef  } from 'vue';
+import bookSVG from '../assets/icons/book.svg';
+import priceSVG from '../assets/icons/pricing.svg';
+import boxSVG from '../assets/icons/box.svg';
+import infoSVG from '../assets/icons/info.svg';
+import photoSVG from '../assets/icons/photo.svg';
 import ImageUploader from './ImageUploader.vue';
 import Sidebar from '../components/Sidebar.vue';
 import MetaBar from '../components/MetaBar.vue';
@@ -14,15 +14,14 @@ import ISBN from 'isbn-utils';
 import { auth, db, storage } from '../firebase-init'
 import { collection, addDoc, updateDoc, doc, serverTimestamp, deleteDoc, DocumentReference, setDoc, where, query, getDocs, getDoc } from "firebase/firestore"; 
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router';
 import { onAuthStateChanged } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import success from '../assets/icons/check-big.svg?raw';
 import failure from '../assets/icons/circle-x.svg?raw';
 import type { BuyerRequestedDoc, WatchlistDoc } from '../interfaces';
 import { sendEmail } from '../sendEmail';
 import { isbnToTitle, titleToIsbn, isbnToSubject, titleToSubject, isbnToGrade, titleToGrade } from "BookMappings";
-
-console.log(isbnToGrade)
 
 let displayName: string | null = null;
 let userID: string | null = null;
@@ -42,7 +41,7 @@ async function autofillUserData() {
   }
 }
 
-onAuthStateChanged(auth, async(user) => {
+onAuthStateChanged(auth, async(user: User | null) => {
   if (user) {
     userID = user.uid;
     userEmail = user.email;
@@ -63,7 +62,7 @@ if (route.query.slide) {
   if (!isNaN(slideNum)) activeSlide.value = slideNum
 }
 
-watch(activeSlide, (val) => {
+watch(activeSlide, (val: number) => {
   router.replace({
     query: {
       ...route.query,
@@ -76,9 +75,6 @@ const slideIcons = [bookSVG, priceSVG, infoSVG, boxSVG, photoSVG]
 
 const progresses: Ref<number[]> = ref([0, 0, 0, 100, 0])
 
-const isISBNDisabled = ref(false)
-const isTitleDisabled = ref(false)
-
 const ISBNOptions = ref(
   Object.keys(isbnToTitle).map(key => ({
     name: key,
@@ -86,20 +82,18 @@ const ISBNOptions = ref(
   }))
 );
 
-const selectedISBN = ref();
+type selectedItem = { name: string; code: string; };
 
-watch(selectedISBN, (newISBN) => {
-  if(newISBN == null){
-    isTitleDisabled.value = false;
-    return
-  } else if(isISBNDisabled.value == false) {
-    isTitleDisabled.value = true;
-    selectedTitle.value = null;
-  } else {
-    return
-  }
+const selectedISBN: Ref<selectedItem | null> = ref(null);
+const selectedTitle: Ref<selectedItem | null> = ref(null);
+const selectedGrade: Ref<selectedItem | null> = ref(null);
+const selectedSubject: Ref<selectedItem | null> = ref(null);
 
-  if(isbnToSubject[newISBN.code]) {
+watch(selectedISBN, (newISBN: selectedItem | null) => {
+
+  if(!newISBN) return;
+
+  if(isbnToSubject[newISBN.code] && selectedSubject.value == null) {
     const subject: string = isbnToSubject[newISBN.code];
     selectedSubject.value = {
       name: subject,
@@ -107,7 +101,7 @@ watch(selectedISBN, (newISBN) => {
     }
   }
 
-  if (isbnToGrade[newISBN.code]) {
+  if (isbnToGrade[newISBN.code] && selectedGrade.value == null) {
     const grade: string = isbnToGrade[newISBN.code].toLowerCase();
 
     console.log("GRADE")
@@ -127,14 +121,15 @@ watch(selectedISBN, (newISBN) => {
     };
   }
 
-  if(isbnToTitle[newISBN.code]) {
-    const title: string = isbnToTitle[newISBN.code];
-    selectedTitle.value = {
-      name: title,
-      code: title.toLowerCase().replace(/\s+/g, '-')
-    };
-    return
-  }
+  if(selectedTitle.value == null) {
+    if(isbnToTitle[newISBN.code]) {
+      const title: string = isbnToTitle[newISBN.code];
+      selectedTitle.value = {
+        name: title,
+        code: title.toLowerCase().replace(/\s+/g, '-')
+      };
+      return
+    }
 
   const raw = newISBN?.code?.replace(/[-\s]/g, '');
   
@@ -209,23 +204,14 @@ watch(selectedISBN, (newISBN) => {
     console.log('Invalid ISBN');
     selectedTitle.value = null;
   }
+  }
 });
 
-const selectedTitle = ref();
+watch(selectedTitle, (newTitle: selectedItem | null) => {
 
-watch(selectedTitle, (newTitle) => {
-
-  if(newTitle == null){
-    isISBNDisabled.value = false;
-    return
-  } else if(isTitleDisabled.value == false) {
-    isISBNDisabled.value = true;
-    selectedISBN.value = null;
-  } else {
-    return
-  }
-
-  if(titleToIsbn[newTitle.name]) {
+  if(!newTitle) return;
+  
+  if(titleToIsbn[newTitle.name] && selectedISBN.value == null) {
     const isbn: string = titleToIsbn[newTitle.name];
     selectedISBN.value = {
       name: isbn,
@@ -233,7 +219,7 @@ watch(selectedTitle, (newTitle) => {
     };
   }
 
-  if(titleToSubject[newTitle.name]) {
+  if(titleToSubject[newTitle.name] && selectedSubject.value == null) {
     const subject: string = titleToSubject[newTitle.name];
     selectedSubject.value = {
       name: subject,
@@ -241,7 +227,7 @@ watch(selectedTitle, (newTitle) => {
     }
   }
 
-  if (titleToGrade[newTitle.name]) {
+  if (titleToGrade[newTitle.name] && selectedGrade.value == null) {
     const grade: string = titleToGrade[newTitle.name].toLowerCase();
 
     console.log(grade)
@@ -261,6 +247,7 @@ watch(selectedTitle, (newTitle) => {
   }
 })
 
+
 const gradeOptions = ref([
   { name: 'Grade 1', code: '1' },
   { name: 'Grade 2', code: '2' },
@@ -277,16 +264,12 @@ const gradeOptions = ref([
   { name: 'Bridge Program', code: 'bp' }
 ]);
 
-const selectedGrade = ref();
-
 const subjectOptions = ref(
   Array.from(new Set(Object.values(isbnToSubject))).map((val) => ({
     name: val as string,
     code: (val as string).toLowerCase().replace(/\s+/g, '-')
   }))
 );
-
-const selectedSubject = ref();
 
 const titleOptions = ref(
   Object.keys(titleToIsbn).map(key => ({
@@ -315,7 +298,6 @@ let tagOptions: Ref<{ name: string; code: string }[]> = ref([
   { name: "Exam Preparation", code: "exam-preparation" },
   { name: "Digital Access", code: "digital-access" }
 ]);
-
 
 let selectedTags: Ref<{name: string, code: string}[]> = ref([]);
 
@@ -393,7 +375,7 @@ const slides = [
               id: "ISBNMS",
               name: "ISBNMS",
               modelValue: selectedISBN,
-              'onUpdate:modelValue': (val: { name: string; code: string; }[]) => selectedISBN.value = val,
+              'onUpdate:modelValue': (val: selectedItem) => selectedISBN.value = val,
               options: ISBNOptions,
               searchable: true,
               taggable: true,
@@ -401,7 +383,6 @@ const slides = [
               class: 'multiselect',
               label: 'name',
               trackBy: 'code',
-              disabled: isISBNDisabled,
               onTag: (newTag: string) => {
                 const tagObj = {
                   name: newTag,
@@ -422,7 +403,7 @@ const slides = [
               id: "titleMS",
               name: "titleMS",
               modelValue: selectedTitle,
-              'onUpdate:modelValue': (val: { name: string; code: string; }[]) => selectedTitle.value = val,
+              'onUpdate:modelValue': (val: selectedItem) => selectedTitle.value = val,
               options: titleOptions,
               searchable: true,
               taggable: true,
@@ -430,7 +411,7 @@ const slides = [
               class: 'multiselect',
               label: 'name',
               trackBy: 'code',
-              disabled: isTitleDisabled,
+              appendToBody: false,
               onTag: (newTag: string) => {
                 const tagObj = {
                   name: newTag,
@@ -451,7 +432,7 @@ const slides = [
               id: "gradeMS",
               name: "gradeMS",
               modelValue: selectedGrade,
-              'onUpdate:modelValue': (val: { name: string; code: string; }[]) => selectedGrade.value = val,
+              'onUpdate:modelValue': (val: selectedItem) => selectedGrade.value = val,
               options: gradeOptions,
               searchable: true,
               placeholder: 'Enter Grade',
@@ -471,7 +452,7 @@ const slides = [
               id: "subjectMS",
               name: "subjectMS",
               modelValue: selectedSubject,
-              'onUpdate:modelValue': (val: { name: string; code: string; }[]) => selectedSubject.value = val,
+              'onUpdate:modelValue': (val: selectedItem) => selectedSubject.value = val,
               options: subjectOptions,
               searchable: true,
               placeholder: 'Enter Subject',
@@ -756,6 +737,13 @@ const slides = [
           {
             component: 'p',
             props: {
+              text: computed(() => `ISBN: ${selectedISBN.value?.name || 'Not specified'}`),
+              class: 'confirmation-field'
+            }
+          },
+          {
+            component: 'p',
+            props: {
               text: computed(() => `Title: ${selectedTitle.value?.name || 'Not specified'}`),
               class: 'confirmation-field'
             }
@@ -770,8 +758,15 @@ const slides = [
           {
             component: 'p',
             props: {
+              text: computed(() => `Subject: ${selectedSubject.value?.name || 'Not specified'}`),
+              class: 'confirmation-field'
+            }
+          },
+          {
+            component: 'p',
+            props: {
               text: computed(() =>
-                `Tags: ${selectedTags.value.length ? selectedTags.value.map(tag => tag.name).join(', ') : 'None'}`
+                `Tags: ${selectedTags.value.length ? selectedTags.value.map((tag: { name: string; code: string; }) => tag.name).join(', ') : 'None'}`
               ),
               class: 'confirmation-field'
             }
@@ -792,7 +787,7 @@ const slides = [
             component: 'p',
             props: {
               text: computed(() =>
-                `Condition Details: ${conditionDetails.value.length ? conditionDetails.value.map(tag => tag.name).join(', ') : 'None'}`
+                `Condition Details: ${conditionDetails.value.length ? conditionDetails.value.map((tag: { name: string; code: string; }) => tag.name).join(', ') : 'None'}`
               ),
               class: 'confirmation-field'
             }
@@ -832,7 +827,7 @@ const slides = [
             component: 'p',
             props: {
               text: computed(() => `Delivery Preference: ${deliveryPreference.value.length
-                      ? deliveryPreference.value.map(tag => tag.name).join(', ')
+                      ? deliveryPreference.value.map((tag: { name: string; code: string }) => tag.name).join(', ')
                       : 'None' }`),
               class: 'confirmation-field'
             }
@@ -852,7 +847,7 @@ const slides = [
           {
             component: 'p',
             props: {
-              text: computed(() => `Contact Preference: ${contactPreference.value.length ? contactPreference.value.map(tag => tag.name).join(', ') : 'None'}`),
+              text: computed(() => `Contact Preference: ${contactPreference.value.length ? contactPreference.value.map((tag: { name: string; code: string; }) => tag.name).join(', ') : 'None'}`),
               class: 'confirmation-field'
             }
           }
@@ -873,7 +868,7 @@ const slides = [
             props: {
               text: computed(() =>
                 `Extra Images: ${Array.isArray(extraImages.value) && extraImages.value.length
-                  ? extraImages.value.map(img => img.name).join(', ')
+                  ? extraImages.value.map((img: File) => img.name).join(', ')
                   : 'None'}`
               ),
               class: 'confirmation-field'
@@ -892,7 +887,7 @@ function nextSlide() {
 }
 
 async function submitData() {
-  if (progresses.value.every(x => x >= 100)) {
+  if (progresses.value.every((x: number) => x >= 100)) {
     try {
       const docRef = await addDoc(collection(db, "uploadPool"), {
         isbn: selectedISBN.value || null,
@@ -940,7 +935,7 @@ async function submitData() {
 
       const watchlistQuery = query(
         collection(db, 'watchlist'),
-        where('isbn.code', '==', selectedISBN.value.code)
+        where('isbn.code', '==', selectedISBN.value?.code)
       )
 
       let watchlistData: [DocumentReference, WatchlistDoc][] = []
@@ -966,8 +961,8 @@ async function submitData() {
               <p style="margin-top: 12px;">
                 <strong>Book Details:</strong><br>
                 ISBN: ${selectedISBN.value?.code ?? "N/A"}<br>
-                Title: ${selectedTitle.value.name ?? "N/A"}<br>
-                Grade: ${selectedGrade.value.name ?? "N/A"}
+                Title: ${selectedTitle.value?.name ?? "N/A"}<br>
+                Grade: ${selectedGrade.value?.name ?? "N/A"}
               </p>
                   
               <p>
@@ -1008,71 +1003,12 @@ async function submitData() {
     console.log(progresses.value);
   }
 }
-function useTeleportDropdown(el: HTMLElement) {
-  let dropdown: HTMLElement | null = null
-  const observer = new MutationObserver(() => {
-    const found = el.querySelector(".multiselect__content-wrapper") as HTMLElement
-    if (found && found !== dropdown) {
-      dropdown = found
-      document.body.appendChild(dropdown)
-      positionDropdown()
-    }
-  })
 
-  const positionDropdown = () => {
-    if (!dropdown) return
-    const rect = el.getBoundingClientRect()
-    dropdown.style.position = "absolute"
-    dropdown.style.top = rect.bottom + "px"
-    dropdown.style.left = rect.left + "px"
-    dropdown.style.width = rect.width + "px"
-    dropdown.style.zIndex = "9999"
-  }
-
-  const cleanup = () => {
-    observer.disconnect()
-    if (dropdown) dropdown.remove()
-  }
-
-  observer.observe(el, { childList: true, subtree: true })
-  window.addEventListener("resize", positionDropdown)
-  window.addEventListener("scroll", positionDropdown, true)
-
-  return cleanup
-}
 onMounted(() => {
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      mutation.addedNodes.forEach((node) => {
-        if (node instanceof HTMLElement && node.classList.contains("multiselect")) {
-          console.log("NEW MULTISELECT: ", node)
-          const cleanup = useTeleportDropdown(node)
-          onBeforeUnmount(cleanup)
-        }
-        if (node instanceof HTMLElement) {
-          node.querySelectorAll(".multiselect").forEach(el => {
-            console.log("NEW MULTISELECT (child): ", el)
-            const cleanup = useTeleportDropdown(el as HTMLElement)
-            onBeforeUnmount(cleanup)
-          })
-        }
-      })
-    })
-  })
 
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  })
+    console.log("Current Icon")
+    console.log(slideIcons[activeSlide.value - 1])
 
-  document.querySelectorAll(".multiselect").forEach(el => {
-    const cleanup = useTeleportDropdown(el as HTMLElement)
-    onBeforeUnmount(cleanup)
-  })
-
-  onBeforeUnmount(() => observer.disconnect())
-})
-onMounted(() => {
     watch([selectedISBN, selectedTitle, selectedGrade, selectedSubject, selectedTags, selectedCondition, conditionDetails, priceMode, price, quantity, deliveryPreference, uploaderName, contactPreference, listingImage, extraImages], ([newISBN, newTitle, newGrade, newSubject, newTags, newCondition, newConditionDetails, newPriceMode, newPrice, newQuantity, newDeliveryPreference, newUploaderName, newContactPreference, newListingImage, newExtraImages], [oldISBN, oldTitle, oldGrade, oldSubject, oldTags, oldCondition, oldConditionDetails, oldPriceMode, oldPrice, oldQuantity, oldDeliveryPreference, oldUploaderName, oldContactPreference, oldListingImage, oldExtraImages]) => {
         if (newISBN && !oldISBN) progresses.value[0] += 20;
         if (!newISBN && oldISBN) progresses.value[0] -= 20;
@@ -1150,7 +1086,7 @@ function addItem<T extends object>(
   selectedRef: Ref<T[] | T | null | undefined>,  
   multiple: boolean                  
 ) {
-  const exists = optionsRef.value.some(opt =>
+  const exists = optionsRef.value.some((opt: T) =>
     JSON.stringify(opt) === JSON.stringify(newItem)
   )
   if (!exists) {
@@ -1325,8 +1261,8 @@ function closeConfirmationModal() {
           </div>
           <div class="requester-data">
             <p><b>Requester Name:</b> {{ selectedNotif?.[1]?.buyerName }}</p>
-            <p><b>Requester Contact Preference:</b> {{ selectedNotif?.[1].buyerContactPreference.map(x => x.name).join(', ') }}</p>
-            <p><b>Requester Delivery Preference:</b> {{ selectedNotif?.[1].buyerDeliveryPreference.map(x => x.name).join(', ') }}</p>
+            <p><b>Requester Contact Preference:</b> {{ selectedNotif?.[1].buyerContactPreference.map((x: { name: string; code: string; }) => x.name).join(', ') }}</p>
+            <p><b>Requester Delivery Preference:</b> {{ selectedNotif?.[1].buyerDeliveryPreference.map((x: { name: string; code: string; }) => x.name).join(', ') }}</p>
             <p><b>Quantity Requested:</b> {{ selectedNotif?.[1].buyerQuantity }}</p>
           </div>
           <div class="button-container">
@@ -1416,6 +1352,8 @@ function closeConfirmationModal() {
             color: white;
             box-shadow: 0 0 10px 2px transparentize($color-primary, 0.25);
             .slide-number {
+                width: 100%;
+                height: 100%;
                 display: flex;
                 align-items: center;
                 justify-content: center;

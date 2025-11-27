@@ -1,1 +1,0 @@
-{"version":3,"file":"TableItem.vue.d.ts","sourceRoot":"","sources":["../../../src/components_chats/TableItem.vue"],"names":[],"mappings":"AAAA,OAqEO,EAAE,KAAK,iBAAiB,EAAE,MAAM,oBAAoB,CAAC;AAC5D,OAAO,EAAE,KAAK,iBAAiB,EAAE,MAAM,eAAe,CAAC;AAEvD,KAAK,WAAW,GAAG;IACjB,OAAO,EAAE,CAAC,iBAAiB,EAAE,iBAAiB,CAAC,CAAC;IAChD,QAAQ,EAAE,OAAO,CAAA;CAClB,CAAC;;AAkHF,wBAMG"}

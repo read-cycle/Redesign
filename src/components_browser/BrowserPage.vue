@@ -3,7 +3,7 @@ import Sidebar from '../components/Sidebar.vue';
 import MetaBar from '../components/MetaBar.vue';
 import BrowserCard from './BrowserCard.vue';
 import Multiselect from 'vue-multiselect'
-import { computed, isRef, nextTick, onBeforeUnmount, onMounted, ref, watch, type ComputedRef, type Ref } from 'vue';
+import { computed, isRef, nextTick, ref, watch, type ComputedRef, type Ref } from 'vue';
 import Datepicker from 'vue3-datepicker'
 import { addDoc, collection, deleteDoc, doc, DocumentReference, getDoc, getDocs, orderBy, query, setDoc } from "firebase/firestore";
 import { auth, db } from '../firebase-init';
@@ -17,7 +17,7 @@ import success from '../assets/icons/check-big.svg?raw';
 import failure from '../assets/icons/circle-x.svg?raw';
 import { sendEmail } from '../sendEmail';
 import Navbar from '../components/Navbar.vue';
-import { isbnToSubject } from "BookMappings";
+import { isbnToSubject, isbnToTitle } from "BookMappings";
 
 let userID: string | null = null;
 let displayName: string | null = null;
@@ -35,6 +35,13 @@ async function autofillUserData() {
     buyerDeliveryPreference.value = data.deliveryPreferences;
   }
 }
+
+const ISBNOptions = ref(
+  Object.keys(isbnToTitle).map(key => ({
+    name: key,
+    code: key
+  }))
+);
 
 onAuthStateChanged(auth, async(user) => {
   if (user) {
@@ -206,71 +213,7 @@ function nextImage() {
     currentImageIndex.value++
   }
 }
-function useTeleportDropdown(el: HTMLElement) {
-  let dropdown: HTMLElement | null = null
-  const observer = new MutationObserver(() => {
-    const found = el.querySelector(".multiselect__content-wrapper") as HTMLElement
-    if (found && found !== dropdown) {
-      dropdown = found
-      document.body.appendChild(dropdown)
-      positionDropdown()
-    }
-  })
 
-  const positionDropdown = () => {
-    if (!dropdown) return
-    const rect = el.getBoundingClientRect()
-    dropdown.style.position = "absolute"
-    dropdown.style.top = rect.bottom + "px"
-    dropdown.style.left = rect.left + "px"
-    dropdown.style.width = rect.width + "px"
-    dropdown.style.zIndex = "9999"
-  }
-
-  const cleanup = () => {
-    observer.disconnect()
-    if (dropdown) dropdown.remove()
-  }
-
-  observer.observe(el, { childList: true, subtree: true })
-  window.addEventListener("resize", positionDropdown)
-  window.addEventListener("scroll", positionDropdown, true)
-
-  return cleanup
-}
-onMounted(() => {
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      mutation.addedNodes.forEach((node) => {
-        if (node instanceof HTMLElement && node.classList.contains("multiselect")) {
-          console.log("NEW MULTISELECT: ", node)
-          const cleanup = useTeleportDropdown(node)
-          onBeforeUnmount(cleanup)
-        }
-        // also check children of added node
-        if (node instanceof HTMLElement) {
-          node.querySelectorAll(".multiselect").forEach(el => {
-            console.log("NEW MULTISELECT (child): ", el)
-            const cleanup = useTeleportDropdown(el as HTMLElement)
-            onBeforeUnmount(cleanup)
-          })
-        }
-      })
-    })
-  })
-
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  })
-
-  document.querySelectorAll(".multiselect").forEach(el => {
-    const cleanup = useTeleportDropdown(el as HTMLElement)
-    onBeforeUnmount(cleanup)
-  })
-
-  onBeforeUnmount(() => observer.disconnect())
-})
 const activeSlide = ref(1);
 
 const slideIcons = [bookSVG, infoSVG, checkSVG]
@@ -844,8 +787,17 @@ watch(searchQuery, (newQuery) => {
                       :taggable="true"
                       :searchable="true"
                       mode="tags"
-                      placeholder="Filter Subjects" 
+                      placeholder="Filter Grades" 
                       class="multiselect tag-multiselect"
+                      label="name"
+                      trackBy="code"
+                      @tag="(newTag: string) => {
+                        const tagObj = {
+                          name: newTag,
+                          code: newTag.replace(/[\s-]/g, '')
+                        }
+                        addItem(tagObj, subjectOptions, selectedSubjects, true)
+                      }"
                     /> 
                   </div>
                 </div>
@@ -853,6 +805,33 @@ watch(searchQuery, (newQuery) => {
                   <div class="label-track">
                     <label>ISBN</label>
                     <label class="reset-btn" @click="selectedISBNs = []; applyFilters()">Reset</label>
+                  </div>
+                  <div class="selection-track">
+                    <Multiselect 
+                      v-model="selectedISBNs" 
+                      :options="ISBNOptions" 
+                      :multiple="true"
+                      :taggable="true"
+                      :searchable="true"
+                      mode="tags"
+                      placeholder="Filter Grades" 
+                      class="multiselect tag-multiselect"
+                      label="name"
+                      trackBy="code"
+                      @tag="(newTag: string) => {
+                        const tagObj = {
+                          name: newTag,
+                          code: newTag.replace(/[\s-]/g, '')
+                        }
+                        addItem(tagObj, ISBNOptions, selectedISBNs, true)
+                      }"
+                    /> 
+                  </div>
+                </div>
+                <div class="filter-block">
+                  <div class="label-track">
+                    <label>Grade</label>
+                    <label class="reset-btn" @click="selectedGrades = []; applyFilters()">Reset</label>
                   </div>
                   <div class="selection-track">
                     <Multiselect 
@@ -873,25 +852,6 @@ watch(searchQuery, (newQuery) => {
                         }
                         addItem(tagObj, gradeOptions, selectedGrades, true)
                       }"
-                    /> 
-                  </div>
-                </div>
-                <div class="filter-block">
-                  <div class="label-track">
-                    <label>Grade</label>
-                    <label class="reset-btn" @click="selectedGrades = []; applyFilters()">Reset</label>
-                  </div>
-                  <div class="selection-track">
-                    <Multiselect 
-                      v-model="selectedGrades" 
-                      :options="gradeOptions" 
-                      :multiple="true"
-                      :searchable="true"
-                      mode="tags"
-                      placeholder="Filter Grades" 
-                      class="multiselect tag-multiselect"
-                      label="name"
-                      trackBy="code"
                     /> 
                   </div>
                 </div>
@@ -918,7 +878,7 @@ watch(searchQuery, (newQuery) => {
                       :taggable="true"
                       :searchable="true"
                       mode="tags"
-                      placeholder="Filter Tags" 
+                      placeholder="Filter Grades" 
                       class="multiselect tag-multiselect"
                       label="name"
                       trackBy="code"
@@ -1112,8 +1072,8 @@ watch(searchQuery, (newQuery) => {
           </div>
           <div class="requester-data">
             <p><b>Requester Name:</b> {{ selectedNotif?.[1]?.buyerName }}</p>
-            <p><b>Requester Contact Preference:</b> {{ selectedNotif?.[1].buyerContactPreference.map(x => x.name).join(', ') }}</p>
-            <p><b>Requester Delivery Preference:</b> {{ selectedNotif?.[1].buyerDeliveryPreference.map(x => x.name).join(', ') }}</p>
+            <p><b>Requester Contact Preference:</b> {{ selectedNotif?.[1].buyerContactPreference.map((x: { name: any; }) => x.name).join(', ') }}</p>
+            <p><b>Requester Delivery Preference:</b> {{ selectedNotif?.[1].buyerDeliveryPreference.map((x: { name: any; }) => x.name).join(', ') }}</p>
             <p><b>Quantity Requested:</b> {{ selectedNotif?.[1].buyerQuantity }}</p>
           </div>
           <div class="button-container">
@@ -1525,12 +1485,11 @@ watch(searchQuery, (newQuery) => {
       color: white;
       box-shadow: 0 0 10px 2px transparentize($color-primary, 0.25);
       .slide-number {
+          width: 100%;
+          height: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
-          img {
-              width: 75%;
-          }
       }
   }
   .bar-container {
@@ -1737,6 +1696,30 @@ input[type="checkbox"]:checked::after {
   }
 }
 @media screen and (min-width: 1025px) {
+  .button-container {
+    button {
+      font-size: px-to-vw(15);
+      padding: 0.5vw 1.5vw;
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(40);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(15);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(17);
+    }
+  }
+  .slide-number {
+    img {
+      width: 75%;
+    }
+  }
   .option-btn {
     font-size: px-to-vw(15);
     padding: 0.5vw 0.75vw;
@@ -1851,6 +1834,11 @@ input[type="checkbox"]:checked::after {
       font-size: px-to-vw(50);
     }
   }
+  .slide-number {
+    img {
+      width: 60%;
+    }
+  }
   .label-track {
     label {
       font-size: px-to-vw(40);
@@ -1898,6 +1886,11 @@ input[type="checkbox"]:checked::after {
     .proceed-btn {
       padding: 1vw 2vw;
       font-size: px-to-vw(40);
+    }
+  }
+  .slide-number {
+    img {
+      width: 55%;
     }
   }
   .page-header {
@@ -1950,6 +1943,11 @@ input[type="checkbox"]:checked::after {
     padding: 1.5vw 1.75vw;
     svg {
       width: 2.5vw;
+    }
+  }
+  .slide-number {
+    img {
+      width: 50%;
     }
   }
   .page-header {
@@ -2037,27 +2035,6 @@ input[type="checkbox"]:checked::after {
   .book-metadata {
     p {
       font-size: px-to-vw(35);
-    }
-  }
-}
-@media screen and (min-width: 1025px) {
-  .button-container {
-    button {
-      font-size: px-to-vw(15);
-      padding: 0.5vw 1.5vw;
-    }
-  }
-  .confirm-header {
-    font-size: px-to-vw(40);
-  }
-  .requester-data {
-    p {
-      font-size: px-to-vw(15);
-    }
-  }
-  .book-metadata {
-    p {
-      font-size: px-to-vw(17);
     }
   }
 }

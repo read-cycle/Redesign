@@ -229,70 +229,6 @@ function closeSettingsModal() {
   document.body.style.overflow = "auto";
   document.body.style.overflowX = "hidden";
 }
-function useTeleportDropdown(el: HTMLElement) {
-  let dropdown: HTMLElement | null = null
-  const observer = new MutationObserver(() => {
-    const found = el.querySelector(".multiselect__content-wrapper") as HTMLElement
-    if (found && found !== dropdown) {
-      dropdown = found
-      document.body.appendChild(dropdown)
-      positionDropdown()
-    }
-  })
-
-  const positionDropdown = () => {
-    if (!dropdown) return
-    const rect = el.getBoundingClientRect()
-    dropdown.style.position = "absolute"
-    dropdown.style.top = rect.bottom + "px"
-    dropdown.style.left = rect.left + "px"
-    dropdown.style.width = rect.width + "px"
-    dropdown.style.zIndex = "9999999"
-  }
-
-  const cleanup = () => {
-    observer.disconnect()
-    if (dropdown) dropdown.remove()
-  }
-
-  observer.observe(el, { childList: true, subtree: true })
-  window.addEventListener("resize", positionDropdown)
-  window.addEventListener("scroll", positionDropdown, true)
-
-  return cleanup
-}
-onMounted(() => {
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      mutation.addedNodes.forEach((node) => {
-        if (node instanceof HTMLElement && node.classList.contains("multiselect")) {
-          console.log("NEW MULTISELECT: ", node)
-          const cleanup = useTeleportDropdown(node)
-          onBeforeUnmount(cleanup)
-        }
-        if (node instanceof HTMLElement) {
-          node.querySelectorAll(".multiselect").forEach(el => {
-            console.log("NEW MULTISELECT (child): ", el)
-            const cleanup = useTeleportDropdown(el as HTMLElement)
-            onBeforeUnmount(cleanup)
-          })
-        }
-      })
-    })
-  })
-
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  })
-
-  document.querySelectorAll(".multiselect").forEach(el => {
-    const cleanup = useTeleportDropdown(el as HTMLElement)
-    onBeforeUnmount(cleanup)
-  })
-
-  onBeforeUnmount(() => observer.disconnect())
-})
 </script>
 <template>
     <div class="meta-container">
@@ -360,7 +296,7 @@ onMounted(() => {
                   <div class="linked-account" @click="linkTwitterAccount()">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M523.4 215.7C523.7 220.2 523.7 224.8 523.7 229.3C523.7 368 418.1 527.9 225.1 527.9C165.6 527.9 110.4 510.7 64 480.8C72.4 481.8 80.6 482.1 89.3 482.1C138.4 482.1 183.5 465.5 219.6 437.3C173.5 436.3 134.8 406.1 121.5 364.5C128 365.5 134.5 366.1 141.3 366.1C150.7 366.1 160.1 364.8 168.9 362.5C120.8 352.8 84.8 310.5 84.8 259.5L84.8 258.2C98.8 266 115 270.9 132.2 271.5C103.9 252.7 85.4 220.5 85.4 184.1C85.4 164.6 90.6 146.7 99.7 131.1C151.4 194.8 229 236.4 316.1 240.9C314.5 233.1 313.5 225 313.5 216.9C313.5 159.1 360.3 112 418.4 112C448.6 112 475.9 124.7 495.1 145.1C518.8 140.6 541.6 131.8 561.7 119.8C553.9 144.2 537.3 164.6 515.6 177.6C536.7 175.3 557.2 169.5 576 161.4C561.7 182.2 543.8 200.7 523.4 215.7z"/></svg>
                     <p v-if="twitterLinkedEmail == null || twitterLinkedEmail == undefined">Link with Twitter/X</p>
-                    <p v-if="twitterLinkedEmail">bgfbgf{{ twitterLinkedEmail }}</p>
+                    <p v-if="twitterLinkedEmail">{{ twitterLinkedEmail }}</p>
                   </div>
                   <div class="linked-account" @click="linkMicrosoftAccount()">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M96 96L310.6 96L310.6 310.6L96 310.6L96 96zM329.4 96L544 96L544 310.6L329.4 310.6L329.4 96zM96 329.4L310.6 329.4L310.6 544L96 544L96 329.4zM329.4 329.4L544 329.4L544 544L329.4 544L329.4 329.4z"/></svg>

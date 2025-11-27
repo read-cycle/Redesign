@@ -5,6 +5,7 @@ import DashboardPage from './components_dashboard/DashboardPage.vue'
 import BrowserPage from './components_browser/BrowserPage.vue'
 import UploadPage from './components_upload/UploadPage.vue'
 import ChatsPage from './components_chats/ChatsPage.vue'
+import DonationPage from './components_donation/DonationPage.vue'
 
 const routes = [
   { path: '/', component: LandingPage, meta: { title: 'ReadCycle | Landing' } },
@@ -12,7 +13,8 @@ const routes = [
   { path: '/dashboard', component: DashboardPage, meta: { title: 'ReadCycle | Dashboard' } },
   { path: '/browser', component: BrowserPage, meta: { title: 'ReadCycle | Browser' } },
   { path: '/upload', component: UploadPage, meta: { title: 'ReadCycle | Upload' } },
-  { path: '/chats', component: ChatsPage, meta: { title: 'ReadCycle | Chats' } }
+  { path: '/chats', component: ChatsPage, meta: { title: 'ReadCycle | Chats' } },
+  { path: '/donation', component: DonationPage, meta: { title: 'ReadCycle | Donation' } }
 ]
 
 const router = createRouter({

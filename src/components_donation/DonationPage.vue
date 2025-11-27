@@ -1,28 +1,28 @@
 <script setup lang="ts">
 import Multiselect from 'vue-multiselect'
 import Navbar from '../components/Navbar.vue';
-import {  onMounted, ref, watch, type Ref, computed, isRef, type ComputedRef, onBeforeUnmount  } from 'vue';
+import {  onMounted, ref, watch, type Ref, computed, isRef, type ComputedRef  } from 'vue';
 import bookSVG from '../assets/icons/book.svg'
 import priceSVG from '../assets/icons/pricing.svg'
 import boxSVG from '../assets/icons/box.svg'
 import infoSVG from '../assets/icons/info.svg'
 import photoSVG from '../assets/icons/photo.svg'
-import ImageUploader from './ImageUploader.vue';
+import bookCheckSVG from '../assets/icons/book-check.svg';
+import bigCheckSVG from '../assets/icons/check-big.svg';
+import openBoxSVG from '../assets/icons/package-open.svg';
+import communityOutreachSVG from '../assets/icons/user-check.svg';
 import Sidebar from '../components/Sidebar.vue';
 import MetaBar from '../components/MetaBar.vue';
 import ISBN from 'isbn-utils';
-import { auth, db, storage } from '../firebase-init'
-import { collection, addDoc, updateDoc, doc, serverTimestamp, deleteDoc, DocumentReference, setDoc, where, query, getDocs, getDoc } from "firebase/firestore"; 
-import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { auth, db } from '../firebase-init'
+import { collection, addDoc, doc, serverTimestamp, deleteDoc, DocumentReference, setDoc } from "firebase/firestore"; 
 import { useRoute, useRouter } from 'vue-router'
 import { onAuthStateChanged } from 'firebase/auth';
+import type { User } from 'firebase/auth'
 import success from '../assets/icons/check-big.svg?raw';
 import failure from '../assets/icons/circle-x.svg?raw';
-import type { BuyerRequestedDoc, WatchlistDoc } from '../interfaces';
-import { sendEmail } from '../sendEmail';
+import type { BuyerRequestedDoc } from '../interfaces';
 import { isbnToTitle, titleToIsbn, isbnToSubject, titleToSubject, isbnToGrade, titleToGrade } from "BookMappings";
-
-console.log(isbnToGrade)
 
 let displayName: string | null = null;
 let userID: string | null = null;
@@ -31,18 +31,10 @@ let userEmail: string | null = null;
 async function autofillUserData() {
   if(!userID || !displayName) return
 
-  const snap = await getDoc(doc(db, "users", userID));
-
   uploaderName.value = displayName;
-
-  if(snap.exists()) {
-    const data = snap.data()
-    contactPreference.value = data.contactPreferences;
-    deliveryPreference.value = data.deliveryPreferences;
-  }
 }
 
-onAuthStateChanged(auth, async(user) => {
+onAuthStateChanged(auth, async(user: User | null) => {
   if (user) {
     userID = user.uid;
     userEmail = user.email;
@@ -63,7 +55,7 @@ if (route.query.slide) {
   if (!isNaN(slideNum)) activeSlide.value = slideNum
 }
 
-watch(activeSlide, (val) => {
+watch(activeSlide, (val: number) => {
   router.replace({
     query: {
       ...route.query,
@@ -72,9 +64,9 @@ watch(activeSlide, (val) => {
   })
 })
 
-const slideIcons = [bookSVG, priceSVG, infoSVG, boxSVG, photoSVG]
+const slideIcons = [bookSVG, priceSVG, infoSVG, boxSVG, photoSVG, bookCheckSVG]
 
-const progresses: Ref<number[]> = ref([0, 0, 0, 100, 0])
+const progresses: Ref<number[]> = ref([0, 0, 0, 100])
 
 const ISBNOptions = ref(
   Object.keys(isbnToTitle).map(key => ({
@@ -83,9 +75,18 @@ const ISBNOptions = ref(
   }))
 );
 
-const selectedISBN = ref();
+type selectedItem = { name: string; code: string; };
 
-watch(selectedISBN, (newISBN) => {
+const selectedISBN: Ref<selectedItem | null> = ref(null);
+const selectedTitle: Ref<selectedItem | null> = ref(null);
+const selectedGrade: Ref<selectedItem | null> = ref(null);
+const selectedSubject: Ref<selectedItem | null> = ref(null);
+
+const isTitleLoading: Ref<boolean> = ref(false);
+
+watch(selectedISBN, (newISBN: selectedItem | null) => {
+
+  if(!newISBN) return;
 
   if(isbnToSubject[newISBN.code] && selectedSubject.value == null) {
     const subject: string = isbnToSubject[newISBN.code];
@@ -95,11 +96,8 @@ watch(selectedISBN, (newISBN) => {
     }
   }
 
-  if (isbnToGrade[newISBN.code] && selectedGrade == null) {
+  if (isbnToGrade[newISBN.code] && selectedGrade.value == null) {
     const grade: string = isbnToGrade[newISBN.code].toLowerCase();
-
-    console.log("GRADE")
-    console.log(grade)
 
     let gradeName = grade;
 
@@ -115,17 +113,19 @@ watch(selectedISBN, (newISBN) => {
     };
   }
 
-  if(selectedTitle == null) {
+  if(selectedTitle.value == null) {
+    isTitleLoading.value = true;
     if(isbnToTitle[newISBN.code]) {
       const title: string = isbnToTitle[newISBN.code];
       selectedTitle.value = {
         name: title,
         code: title.toLowerCase().replace(/\s+/g, '-')
       };
+      isTitleLoading.value = false;
       return
     }
 
-    const raw = newISBN?.code?.replace(/[-\s]/g, '');
+  const raw = newISBN?.code?.replace(/[-\s]/g, '');
   
   if (ISBN.isValid(raw)) {
     const isbnObj = ISBN.parse(raw) as ISBN.ISBN;
@@ -198,14 +198,15 @@ watch(selectedISBN, (newISBN) => {
     console.log('Invalid ISBN');
     selectedTitle.value = null;
   }
+  isTitleLoading.value = false;
   }
 });
 
-const selectedTitle = ref();
+watch(selectedTitle, (newTitle: selectedItem | null) => {
 
-watch(selectedTitle, (newTitle) => {
-
-  if(titleToIsbn[newTitle.name] && selectedISBN == null) {
+  if(!newTitle) return;
+  
+  if(titleToIsbn[newTitle.name] && selectedISBN.value == null) {
     const isbn: string = titleToIsbn[newTitle.name];
     selectedISBN.value = {
       name: isbn,
@@ -213,7 +214,7 @@ watch(selectedTitle, (newTitle) => {
     };
   }
 
-  if(titleToSubject[newTitle.name] && selectedSubject == null) {
+  if(titleToSubject[newTitle.name] && selectedSubject.value == null) {
     const subject: string = titleToSubject[newTitle.name];
     selectedSubject.value = {
       name: subject,
@@ -221,7 +222,7 @@ watch(selectedTitle, (newTitle) => {
     }
   }
 
-  if (titleToGrade[newTitle.name] && selectedGrade == null) {
+  if (titleToGrade[newTitle.name] && selectedGrade.value == null) {
     const grade: string = titleToGrade[newTitle.name].toLowerCase();
 
     console.log(grade)
@@ -257,16 +258,12 @@ const gradeOptions = ref([
   { name: 'Bridge Program', code: 'bp' }
 ]);
 
-const selectedGrade = ref();
-
 const subjectOptions = ref(
   Array.from(new Set(Object.values(isbnToSubject))).map((val) => ({
     name: val as string,
     code: (val as string).toLowerCase().replace(/\s+/g, '-')
   }))
 );
-
-const selectedSubject = ref();
 
 const titleOptions = ref(
   Object.keys(titleToIsbn).map(key => ({
@@ -305,7 +302,7 @@ const slides = [
               id: "ISBNMS",
               name: "ISBNMS",
               modelValue: selectedISBN,
-              'onUpdate:modelValue': (val: { name: string; code: string; }[]) => selectedISBN.value = val,
+              'onUpdate:modelValue': (val: selectedItem) => selectedISBN.value = val,
               options: ISBNOptions,
               searchable: true,
               taggable: true,
@@ -333,7 +330,7 @@ const slides = [
               id: "titleMS",
               name: "titleMS",
               modelValue: selectedTitle,
-              'onUpdate:modelValue': (val: { name: string; code: string; }[]) => selectedTitle.value = val,
+              'onUpdate:modelValue': (val: selectedItem) => selectedTitle.value = val,
               options: titleOptions,
               searchable: true,
               taggable: true,
@@ -341,6 +338,7 @@ const slides = [
               class: 'multiselect',
               label: 'name',
               trackBy: 'code',
+              loading: isTitleLoading,
               onTag: (newTag: string) => {
                 const tagObj = {
                   name: newTag,
@@ -361,7 +359,7 @@ const slides = [
               id: "gradeMS",
               name: "gradeMS",
               modelValue: selectedGrade,
-              'onUpdate:modelValue': (val: { name: string; code: string; }[]) => selectedGrade.value = val,
+              'onUpdate:modelValue': (val: selectedItem) => selectedGrade.value = val,
               options: gradeOptions,
               searchable: true,
               placeholder: 'Enter Grade',
@@ -381,7 +379,7 @@ const slides = [
               id: "subjectMS",
               name: "subjectMS",
               modelValue: selectedSubject,
-              'onUpdate:modelValue': (val: { name: string; code: string; }[]) => selectedSubject.value = val,
+              'onUpdate:modelValue': (val: selectedItem) => selectedSubject.value = val,
               options: subjectOptions,
               searchable: true,
               placeholder: 'Enter Subject',
@@ -406,7 +404,7 @@ const slides = [
               id: "conditionMS",
               name: "conditionMS",
               modelValue: selectedCondition,
-              'onUpdate:modelValue': (val: { name: string; code: string; }) => selectedCondition.value = val,
+              'onUpdate:modelValue': (val: selectedItem) => selectedCondition.value = val,
               options: conditionOptions,
               searchable: true,
               taggable: true,
@@ -493,6 +491,13 @@ const slides = [
           {
             component: 'p',
             props: {
+              text: computed(() => `ISBN: ${selectedISBN.value?.name || 'Not specified'}`),
+              class: 'confirmation-field'
+            }
+          },
+          {
+            component: 'p',
+            props: {
               text: computed(() => `Title: ${selectedTitle.value?.name || 'Not specified'}`),
               class: 'confirmation-field'
             }
@@ -501,6 +506,13 @@ const slides = [
             component: 'p',
             props: {
               text: computed(() => `Grade: ${selectedGrade.value?.name || 'Not specified'}`),
+              class: 'confirmation-field'
+            }
+          },
+          {
+            component: 'p',
+            props: {
+              text: computed(() => `Subject: ${selectedSubject.value?.name || 'Not specified'}`),
               class: 'confirmation-field'
             }
           }
@@ -529,10 +541,29 @@ const slides = [
             }
           }
         ]
-      }
+      },
+      {
+        label: 'Contact',
+        data: [
+          {
+            component: 'p',
+            props: {
+              text: computed(() => `Uploader Name: ${uploaderName.value || 'Not specified'}`),
+              class: 'confirmation-field'
+            }
+          },
+        ]
+      },
     ]
+  },
+  {
+    header: "Upload Complete!"
   }
 ]
+
+//TODO: Add final page detailing 3 steps on how to donate
+//TODO: Add final page for Upload Page
+//TODO: Add loaders
 
 function nextSlide() {
   setTimeout(() => {
@@ -541,9 +572,9 @@ function nextSlide() {
 }
 
 async function submitData() {
-  if (progresses.value.every(x => x >= 100)) {
+  if (progresses.value.every((x: number) => x >= 100)) {
     try {
-      const docRef = await addDoc(collection(db, "donationPool"), {
+      await addDoc(collection(db, "donationPool"), {
         isbn: selectedISBN.value || null,
         title: selectedTitle.value || null,
         grade: selectedGrade.value || null,
@@ -558,6 +589,8 @@ async function submitData() {
       });
 
       window.alert("Submit Successful.");
+
+      activeSlide.value++;
     } catch (err) {
       console.error("Error uploading:", err);
       window.alert("Upload failed.");
@@ -568,72 +601,12 @@ async function submitData() {
   }
 }
 
-function useTeleportDropdown(el: HTMLElement) {
-  let dropdown: HTMLElement | null = null
-  const observer = new MutationObserver(() => {
-    const found = el.querySelector(".multiselect__content-wrapper") as HTMLElement
-    if (found && found !== dropdown) {
-      dropdown = found
-      document.body.appendChild(dropdown)
-      positionDropdown()
-    }
-  })
-
-  const positionDropdown = () => {
-    if (!dropdown) return
-    const rect = el.getBoundingClientRect()
-    dropdown.style.position = "absolute"
-    dropdown.style.top = rect.bottom + "px"
-    dropdown.style.left = rect.left + "px"
-    dropdown.style.width = rect.width + "px"
-    dropdown.style.zIndex = "9999"
-  }
-
-  const cleanup = () => {
-    observer.disconnect()
-    if (dropdown) dropdown.remove()
-  }
-
-  observer.observe(el, { childList: true, subtree: true })
-  window.addEventListener("resize", positionDropdown)
-  window.addEventListener("scroll", positionDropdown, true)
-
-  return cleanup
-}
 onMounted(() => {
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      mutation.addedNodes.forEach((node) => {
-        if (node instanceof HTMLElement && node.classList.contains("multiselect")) {
-          console.log("NEW MULTISELECT: ", node)
-          const cleanup = useTeleportDropdown(node)
-          onBeforeUnmount(cleanup)
-        }
-        if (node instanceof HTMLElement) {
-          node.querySelectorAll(".multiselect").forEach(el => {
-            console.log("NEW MULTISELECT (child): ", el)
-            const cleanup = useTeleportDropdown(el as HTMLElement)
-            onBeforeUnmount(cleanup)
-          })
-        }
-      })
-    })
-  })
+  watch(
+    [selectedISBN, selectedTitle, selectedGrade, selectedSubject, selectedCondition, quantity, uploaderName],
+    ([newISBN, newTitle, newGrade, newSubject, newCondition, newQuantity, newUploaderName],
+    [oldISBN, oldTitle, oldGrade, oldSubject, oldCondition, oldQuantity, oldUploaderName]) => {
 
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  })
-
-  document.querySelectorAll(".multiselect").forEach(el => {
-    const cleanup = useTeleportDropdown(el as HTMLElement)
-    onBeforeUnmount(cleanup)
-  })
-
-  onBeforeUnmount(() => observer.disconnect())
-})
-onMounted(() => {
-    watch([selectedISBN, selectedTitle, selectedGrade, selectedSubject, selectedCondition, quantity, uploaderName], ([newISBN, newTitle, newGrade, newSubject, newCondition, newQuantity, newUploaderName], [oldISBN, oldTitle, oldGrade, oldSubject, oldCondition, oldQuantity, oldUploaderName]) => {
         if (newISBN && !oldISBN) progresses.value[0] += 25;
         if (!newISBN && oldISBN) progresses.value[0] -= 25;
 
@@ -646,59 +619,14 @@ onMounted(() => {
         if(newSubject && !oldSubject) progresses.value[0] += 25;
         if(!newSubject && oldSubject) progresses.value[0] -= 25;
 
-        if (newCondition && !oldCondition) progresses.value[1] += 20;
-        if (!newCondition && oldCondition) progresses.value[1] -= 20;
-        
-        const newConditionDetailsLen = newConditionDetails.length;
-        const oldConditionDetailsLen = oldConditionDetails.length;
+        if (newCondition && !oldCondition) progresses.value[1] += 50;
+        if (!newCondition && oldCondition) progresses.value[1] -= 50;
 
-        if (newConditionDetailsLen > 0 && oldConditionDetailsLen === 0) progresses.value[1] += 20;
-        if (newConditionDetailsLen === 0 && oldConditionDetailsLen > 0) progresses.value[1] -= 20;
-        
-        if (newPriceMode && !oldPriceMode) progresses.value[1] += 20;
-        if (!newPriceMode && oldPriceMode) progresses.value[1] -= 20;
+        if (newQuantity && !oldQuantity) progresses.value[1] += 50;
+        if (!newQuantity && oldQuantity) progresses.value[1] -= 50;
 
-        if(newPriceMode && !oldPriceMode && newPriceMode?.code === 'free') {
-          progresses.value[1] += 20;
-        } else if (oldPriceMode?.code === 'free' && newPriceMode?.code !== 'free') {
-          progresses.value[1] -= 20;
-        }
-
-        if (newPrice && !oldPrice) progresses.value[1] += 20;
-        if (!newPrice  && oldPrice) progresses.value[1] -= 20;
-
-        if (newQuantity && !oldQuantity) progresses.value[1] += 20;
-        if (!newQuantity && oldQuantity) progresses.value[1] -= 20;
-
-        if (newUploaderName && !oldUploaderName) progresses.value[2] += 100/3;
-        if (!newUploaderName && oldUploaderName) progresses.value[2] -= 100/3;
-
-        const newContactPreferenceLen = Array.isArray(newContactPreference) ? newContactPreference.length : 0;
-        const oldContactPreferenceLen = Array.isArray(oldContactPreference) ? oldContactPreference.length : 0;
-
-        if (newContactPreferenceLen > 0 && oldContactPreferenceLen === 0) progresses.value[2] += 100/3;
-        if (newContactPreferenceLen === 0 && oldContactPreferenceLen > 0) progresses.value[2] -= 100/3;
-
-        const newDeliveryLen = newDeliveryPreference.length;
-        const oldDeliveryLen = oldDeliveryPreference.length;
-
-        if (newDeliveryLen > 0 && oldDeliveryLen === 0) progresses.value[2] += 100/3;
-        if (newDeliveryLen === 0 && oldDeliveryLen > 0) progresses.value[2] -= 100/3;
-
-        if (newListingImage && !oldListingImage) progresses.value[4] += 50;
-        if (!newListingImage && oldListingImage) progresses.value[4] -= 50;
-
-        const newExtraImagesLen = Array.isArray(newExtraImages) ? newExtraImages.length : 0;
-        const oldExtraImagesLen = Array.isArray(oldExtraImages) ? oldExtraImages.length : 0;
-
-        if (newExtraImagesLen > 0 && oldExtraImagesLen === 0) progresses.value[4] += 50;
-        if (newExtraImagesLen === 0 && oldExtraImagesLen > 0) progresses.value[4] -= 50;
-
-        const newTagsLen = newTags.length;
-        const oldTagsLen = oldTags.length;
-
-        if (newTagsLen > 0 && oldTagsLen === 0) progresses.value[0] += 25;
-        if (newTagsLen === 0 && oldTagsLen > 0) progresses.value[0] -= 25;
+        if (newUploaderName && !oldUploaderName) progresses.value[2] += 100;
+        if (!newUploaderName && oldUploaderName) progresses.value[2] -= 100;
     })
 })
 function getText(dataComp: { props: any }) {
@@ -710,7 +638,7 @@ function addItem<T extends object>(
   selectedRef: Ref<T[] | T | null | undefined>,  
   multiple: boolean                  
 ) {
-  const exists = optionsRef.value.some(opt =>
+  const exists = optionsRef.value.some((opt: T) =>
     JSON.stringify(opt) === JSON.stringify(newItem)
   )
   if (!exists) {
@@ -805,12 +733,12 @@ function closeConfirmationModal() {
 <Navbar class="navbar"></Navbar>
 <div class="grid">
   <div class="metabar-container">
-    <MetaBar :title="'Upload'" @notif-click="openModal" ref="metaBar"></MetaBar>
+    <MetaBar :title="'Donation'" @notif-click="openModal" ref="metaBar"></MetaBar>
   </div>
 </div>
 <div class="upload-container">
   <Transition name="fade" mode="out-in">
-    <div class="progress-container" v-if="activeSlide !== 6" >
+    <div class="progress-container" v-if="activeSlide < 5" >
         <div class="slide-number-container">
             <p class="slide-number" :key="activeSlide">
               <img :src="slideIcons[activeSlide - 1]" />
@@ -826,7 +754,7 @@ function closeConfirmationModal() {
         <div class="slide-container" v-if="slides[activeSlide - 1]" :key="activeSlide">
           <div class="text-container">
             <h1 class="text-container-header">{{ slides[activeSlide - 1].header }}</h1>
-            <div class="confirmation-columns-container" v-if="activeSlide == 6">
+            <div class="confirmation-columns-container" v-if="activeSlide == 5">
               <div class="confirmation-column">
                 <div class="form-section" v-for="(section, i) in slides[activeSlide - 1].sections.slice(0, 3)" :key="i">
                     <p class="section-label">{{ section.label }}</p>
@@ -834,13 +762,13 @@ function closeConfirmationModal() {
                 </div>
               </div>
               <div class="confirmation-column">
-                <div class="form-section" v-for="(section, i) in slides[activeSlide - 1].sections.slice(3, 7)" :key="i">
+                <div class="form-section" v-for="(section, i) in slides[activeSlide - 1].sections.slice(3, 6)" :key="i">
                     <p class="section-label">{{ section.label }}</p>
                     <component v-for="(dataComp, j) in section.data" :key="j" :is="dataComp.component" v-bind="dataComp.props">{{ getText(dataComp) }}</component>
                 </div>
               </div>
             </div>
-            <div class="data-wrapper-normal" v-if="activeSlide != 6">
+            <div class="data-wrapper-normal" v-if="activeSlide < 5">
               <div class="form-section" v-for="(section, i) in slides[activeSlide - 1].sections" :key="i">
                 <p class="section-label">{{ section.label }}</p>
                 <div class="section-content">
@@ -853,28 +781,55 @@ function closeConfirmationModal() {
                 </div>
               </div>
             </div>
-            <div class="form-section button-section" v-if="activeSlide != 6">
+            <div class="data-wrapper-finished" v-if="activeSlide > 5">
+              <div class="finished-flex">
+                <div class="finished-col">
+                  <div class="icon-container">
+                    <img :src="bigCheckSVG"></img>
+                  </div>
+                  <h3>Donate online</h3>
+                  <p>Donate the book online (already done!).</p>
+                </div>
+                <div class="finished-col">
+                  <div class="icon-container">
+                    <img :src="openBoxSVG"></img>
+                  </div>
+                  <h3>Drop it off</h3>
+                  <p>Drop the book in the relevant box in the library.</p>
+                </div>
+                <div class="finished-col">
+                  <div class="icon-container">
+                    <img :src="communityOutreachSVG"></img>
+                  </div>
+                  <h3>Change a life</h3>
+                  <p>Our outreach team delivers the books to kids who need them.</p>
+                </div>
+              </div>
+              <button class="dashboard-btn" @click="router.push('/dashboard')">Back to Dashboard</button>
+            </div>
+            <div class="form-section button-section" v-if="activeSlide < 5">
               <button class="next-btn" @click = "nextSlide()">Next Section <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevrons-right-icon lucide-chevrons-right"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></svg></button>
             </div>
-            <div class="form-section button-section" v-if="activeSlide == 6">
+            <div class="form-section button-section" v-if="activeSlide == 5">
               <button class="next-btn" @click = "submitData()">Submit</button>
             </div>
           </div>
-          <div class="graphic-container">
+          <div class="graphic-container" v-if="activeSlide <= 5">
 
           </div>
         </div>
       </Transition>
     </div>
   </div>
-  <div class="slide-number-change">
+  <div class="slide-number-change" v-if="activeSlide <= 5">
     <div class="slide-number-list">
       <div class="nav-left" @click="activeSlide > 1 && activeSlide--" :class="{disabled: activeSlide <= 1}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left-icon lucide-chevron-left"><path d="m15 18-6-6 6-6"/></svg></div>
-      <div class="slide-number-selection" v-for="i in 6" :key="i" @click="activeSlide = i" :class="{active: activeSlide==i}">{{ i }}</div>
-      <div class="nav-right" @click="activeSlide < 6 && activeSlide++" :class="{disabled: activeSlide >= 6}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right-icon lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg></div>
+      <div class="slide-number-selection" v-for="i in 5" :key="i" @click="activeSlide = i" :class="{active: activeSlide==i}">{{ i }}</div>
+      <div class="nav-right" @click="activeSlide < 5 && activeSlide++" :class="{disabled: activeSlide >= 5}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right-icon lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg></div>
     </div>
   </div>
-    <div class="modal-confirmation-container" v-if="toggleConfirmationModal">
+
+  <div class="modal-confirmation-container" v-if="toggleConfirmationModal">
       <div class="modal-confirmation-content">
         <div class="close-btn" @click="closeConfirmationModal()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
         <div class="text-half">
@@ -885,8 +840,8 @@ function closeConfirmationModal() {
           </div>
           <div class="requester-data">
             <p><b>Requester Name:</b> {{ selectedNotif?.[1]?.buyerName }}</p>
-            <p><b>Requester Contact Preference:</b> {{ selectedNotif?.[1].buyerContactPreference.map(x => x.name).join(', ') }}</p>
-            <p><b>Requester Delivery Preference:</b> {{ selectedNotif?.[1].buyerDeliveryPreference.map(x => x.name).join(', ') }}</p>
+            <p><b>Requester Contact Preference:</b> {{ selectedNotif?.[1].buyerContactPreference.map((x: { name: string; code: string; }) => x.name).join(', ') }}</p>
+            <p><b>Requester Delivery Preference:</b> {{ selectedNotif?.[1].buyerDeliveryPreference.map((x: { name: string; code: string; }) => x.name).join(', ') }}</p>
             <p><b>Quantity Requested:</b> {{ selectedNotif?.[1].buyerQuantity }}</p>
           </div>
           <div class="button-container">
@@ -976,6 +931,8 @@ function closeConfirmationModal() {
             color: white;
             box-shadow: 0 0 10px 2px transparentize($color-primary, 0.25);
             .slide-number {
+                width: 100%;
+                height: 100%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -1031,6 +988,52 @@ function closeConfirmationModal() {
               overflow: scroll;
               display: flex;
               flex-direction: column;
+            }
+            .data-wrapper-finished {
+              width: 100%;
+              height: 85%;
+              max-height: 85%;
+              overflow: scroll;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              flex-direction: column;
+              padding: 0.5rem;
+              .finished-flex {
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                .finished-col {
+                  display: flex;
+                  align-items: center;
+                  text-align: center;
+                  flex-direction: column;
+                  height: 60%;
+                  max-height: 60%;
+                  width: 25%;
+                  h3 {
+                    font-family: 'Manrope';
+                    color: $color-accent;
+                  }
+                  p {
+                    font-family: 'Nunito';
+                    color: $color-text;
+                  }
+                  .icon-container {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    height: 50%;
+                    img {
+                      height: 65%;
+                      aspect-ratio: 1/1;
+                    }
+                  }
+                }
+              }
             }
             .text-container-header {
                 font-family: 'Manrope';
@@ -1106,6 +1109,22 @@ function closeConfirmationModal() {
           }
         }
     }
+}
+
+.dashboard-btn {
+  padding: 1rem;
+  width: fit-content !important;
+  border-radius: 10px;
+  color: $color-text;
+  border-radius: 14px;
+  background: linear-gradient(to right, $color-secondary, $color-secondary-lightened);
+  border: 2px solid $color-background;
+  transition: box-shadow 0.4s ease;
+  column-gap: 5px;
+  cursor: pointer;
+  &:hover {
+    box-shadow: 0 0 0 2px $color-primary;
+  }
 }
 
 .confirmation-columns-container {
@@ -1332,7 +1351,7 @@ input[type="checkbox"]:checked::after {
           stroke-dashoffset: 4.1886;
           animation: draw-svg 0.5s ease forwards;
         }
-    
+          
         svg path:nth-child(2) {
           stroke-dasharray: 40.9641;
           stroke-dashoffset: 40.9641;
@@ -1355,6 +1374,25 @@ input[type="checkbox"]:checked::after {
 }
 
 @media screen and (min-width: 1025px) {
+  .button-container {
+    button {
+      font-size: px-to-vw(15);
+      padding: 0.5vw 1.5vw;
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(40);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(15);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(17);
+    }
+  }
   .sidebar {
     display: flex;
   }
@@ -1392,6 +1430,25 @@ input[type="checkbox"]:checked::after {
   }
 }
 @media screen and (max-width: 1025px) {
+  .button-container {
+    button {
+      font-size: px-to-vw(50);
+      padding: 1vw 2vw;
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(60);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(40);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(35);
+    }
+  }
   .sidebar {
     display: none;
   }
@@ -1429,6 +1486,25 @@ input[type="checkbox"]:checked::after {
   }
 }
 @media screen and (max-width: 950px) {
+  .button-container {
+    button {
+      font-size: px-to-vw(50);
+      padding: 1vw 2vw;
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(67.5);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(45);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(40);
+    }
+  }
   .sidebar {
     display: none;
   }
@@ -1466,6 +1542,25 @@ input[type="checkbox"]:checked::after {
   }
 }
 @media screen and (max-width: 550px) {
+  .button-container {
+    button {
+      padding: 2vw 4vw;
+      font-size: px-to-vw(60);
+    }
+  }
+  .confirm-header {
+    font-size: px-to-vw(80);
+  }
+  .requester-data {
+    p {
+      font-size: px-to-vw(50);
+    }
+  }
+  .book-metadata {
+    p {
+      font-size: px-to-vw(50);
+    }
+  }
   .sidebar {
     display: none;
   }
@@ -1500,90 +1595,6 @@ input[type="checkbox"]:checked::after {
   }
   .confirmation-field {
     font-size: px-to-vw(40);
-  }
-}
-@media screen and (max-width: 1025px) {
-  .button-container {
-    button {
-      font-size: px-to-vw(50);
-      padding: 1vw 2vw;
-    }
-  }
-  .confirm-header {
-    font-size: px-to-vw(60);
-  }
-  .requester-data {
-    p {
-      font-size: px-to-vw(40);
-    }
-  }
-  .book-metadata {
-    p {
-      font-size: px-to-vw(35);
-    }
-  }
-}
-@media screen and (min-width: 1025px) {
-  .button-container {
-    button {
-      font-size: px-to-vw(15);
-      padding: 0.5vw 1.5vw;
-    }
-  }
-  .confirm-header {
-    font-size: px-to-vw(40);
-  }
-  .requester-data {
-    p {
-      font-size: px-to-vw(15);
-    }
-  }
-  .book-metadata {
-    p {
-      font-size: px-to-vw(17);
-    }
-  }
-}
-@media screen and (max-width: 950px) {
-  .button-container {
-    button {
-      font-size: px-to-vw(50);
-      padding: 1vw 2vw;
-    }
-  }
-  .confirm-header {
-    font-size: px-to-vw(67.5);
-  }
-  .requester-data {
-    p {
-      font-size: px-to-vw(45);
-    }
-  }
-  .book-metadata {
-    p {
-      font-size: px-to-vw(40);
-    }
-  }
-}
-@media screen and (max-width: 550px) {
-  .button-container {
-    button {
-      padding: 2vw 4vw;
-      font-size: px-to-vw(60);
-    }
-  }
-  .confirm-header {
-    font-size: px-to-vw(80);
-  }
-  .requester-data {
-    p {
-      font-size: px-to-vw(50);
-    }
-  }
-  .book-metadata {
-    p {
-      font-size: px-to-vw(50);
-    }
   }
 }
 </style>

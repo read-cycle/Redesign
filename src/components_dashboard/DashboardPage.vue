@@ -6,7 +6,7 @@ import MetaBar from '../components/MetaBar.vue';
 import StatOption from './StatOption.vue';
 const icons = ['<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock-icon lucide-clock"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="10"/></svg>', '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-binoculars-icon lucide-binoculars"><path d="M10 10h4"/><path d="M19 7V4a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v3"/><path d="M20 21a2 2 0 0 0 2-2v-3.851c0-1.39-2-2.962-2-4.829V8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v11a2 2 0 0 0 2 2z"/><path d="M 22 16 L 2 16"/><path d="M4 21a2 2 0 0 1-2-2v-3.851c0-1.39 2-2.962 2-4.829V8a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v11a2 2 0 0 1-2 2z"/><path d="M9 7V4a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v3"/></svg>', '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload-icon lucide-upload"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>']
 const tableIcons = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-user-icon lucide-book-user"><path d="M15 13a3 3 0 1 0-6 0"/><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/><circle cx="12" cy="8" r="2"/></svg>', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-binoculars-icon lucide-binoculars"><path d="M10 10h4"/><path d="M19 7V4a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v3"/><path d="M20 21a2 2 0 0 0 2-2v-3.851c0-1.39-2-2.962-2-4.829V8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v11a2 2 0 0 0 2 2z"/><path d="M 22 16 L 2 16"/><path d="M4 21a2 2 0 0 1-2-2v-3.851c0-1.39 2-2.962 2-4.829V8a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v11a2 2 0 0 1-2 2z"/><path d="M9 7V4a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v3"/></svg>']
-import { isRef, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
+import { isRef, onMounted, ref, watch, type Ref } from 'vue';
 import type { BuyerRequestedDoc, UploadDoc } from '../interfaces';
 import { addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, serverTimestamp, setDoc, where, type DocumentReference } from 'firebase/firestore';
 import success from '../assets/icons/check-big.svg?raw';
@@ -171,17 +171,9 @@ const selectedISBN = ref();
 
 watch(selectedISBN, (newISBN) => {
   console.log("ISBN Fire")
-  if(newISBN == null){
-    isTitleDisabled.value = false;
-    return
-  } else if(isISBNDisabled.value == false) {
-    isTitleDisabled.value = true;
-    selectedTitle.value = null;
-  } else {
-    return
-  }
+  if(!newISBN) return;
 
-  if(isbnToSubject[newISBN.code]) {
+  if(isbnToSubject[newISBN.code] && selectedSubject.value == null) {
     const subject: string = isbnToSubject[newISBN.code];
     selectedSubject.value = {
       name: subject,
@@ -189,7 +181,7 @@ watch(selectedISBN, (newISBN) => {
     }
   }
 
-  if (isbnToGrade[newISBN.code]) {
+  if (isbnToGrade[newISBN.code] && selectedGrade.value == null) {
     const grade: string = isbnToGrade[newISBN.code].toLowerCase();
 
     let gradeName = grade;
@@ -206,47 +198,70 @@ watch(selectedISBN, (newISBN) => {
     };
   }
 
-  if(isbnToTitle[newISBN.code]) {
-    console.log("Found in mapping")
-    const title: string = isbnToTitle[newISBN.code];
-    selectedTitle.value = {
-      name: title,
-      code: title.toLowerCase().replace(/\s+/g, '-')
-    };
-    console.log(title)
-    return
-  }
+  if(selectedTitle.value == null) {
+  
+    if(isbnToTitle[newISBN.code]) {
+      console.log("Found in mapping")
+      const title: string = isbnToTitle[newISBN.code];
+      selectedTitle.value = {
+        name: title,
+        code: title.toLowerCase().replace(/\s+/g, '-')
+      };
+      console.log(title)
+      return
+    }
 
-  const raw = newISBN?.code?.replace(/[-\s]/g, '');
-  
-  if (ISBN.isValid(raw)) {
-    const isbnObj = ISBN.parse(raw) as ISBN.ISBN;
-    const isbn13 = isbnObj.asIsbn13();
-    console.log('Valid ISBN:', isbn13);
-  
-    const googleURL = `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn13}`;
-    const openLibURL = `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn13}&jscmd=data&format=json`;
-  
-    fetch(googleURL)
-      .then(res => res.json())
-      .then(data => {
-        console.log("Google Books response:", data);
-      
-        if (data.totalItems > 0) {
-          const book = data.items[0].volumeInfo;
-          const title = book.title;
+    const raw = newISBN?.code?.replace(/[-\s]/g, '');
+    
+    if (ISBN.isValid(raw)) {
+      const isbnObj = ISBN.parse(raw) as ISBN.ISBN;
+      const isbn13 = isbnObj.asIsbn13();
+      console.log('Valid ISBN:', isbn13);
+    
+      const googleURL = `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn13}`;
+      const openLibURL = `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn13}&jscmd=data&format=json`;
+    
+      fetch(googleURL)
+        .then(res => res.json())
+        .then(data => {
+          console.log("Google Books response:", data);
         
-          selectedTitle.value = {
-            name: title,
-            code: title.toLowerCase().replace(/\s+/g, '-')
-          };
-        } else {
-          console.log("Google Books: No items found. Trying Open Library...");
-          return fetch(openLibURL)
+          if (data.totalItems > 0) {
+            const book = data.items[0].volumeInfo;
+            const title = book.title;
+          
+            selectedTitle.value = {
+              name: title,
+              code: title.toLowerCase().replace(/\s+/g, '-')
+            };
+          } else {
+            console.log("Google Books: No items found. Trying Open Library...");
+            return fetch(openLibURL)
+              .then(res => res.json())
+              .then(olData => {
+                console.log("Open Library response:", olData);
+              
+                const key = `ISBN:${isbn13}`;
+                if (olData[key]?.title) {
+                  const title = olData[key].title;
+                  selectedTitle.value = {
+                    name: title,
+                    code: title.toLowerCase().replace(/\s+/g, '-')
+                  };
+                } else {
+                  console.log("Open Library: No book found.");
+                  selectedTitle.value = null;
+                }
+              });
+          }
+        })
+        .catch(err => {
+          console.error("Google Books error:", err);
+          console.log("Falling back to Open Library...");
+        
+          fetch(openLibURL)
             .then(res => res.json())
             .then(olData => {
-              console.log("Open Library response:", olData);
-            
               const key = `ISBN:${isbn13}`;
               if (olData[key]?.title) {
                 const title = olData[key].title;
@@ -255,40 +270,20 @@ watch(selectedISBN, (newISBN) => {
                   code: title.toLowerCase().replace(/\s+/g, '-')
                 };
               } else {
-                console.log("Open Library: No book found.");
+                console.log("Open Library also failed.");
                 selectedTitle.value = null;
               }
-            });
-        }
-      })
-      .catch(err => {
-        console.error("Google Books error:", err);
-        console.log("Falling back to Open Library...");
-      
-        fetch(openLibURL)
-          .then(res => res.json())
-          .then(olData => {
-            const key = `ISBN:${isbn13}`;
-            if (olData[key]?.title) {
-              const title = olData[key].title;
-              selectedTitle.value = {
-                name: title,
-                code: title.toLowerCase().replace(/\s+/g, '-')
-              };
-            } else {
-              console.log("Open Library also failed.");
+            })
+            .catch(err => {
+              console.error("Both ISBN lookups failed:", err);
               selectedTitle.value = null;
-            }
-          })
-          .catch(err => {
-            console.error("Both ISBN lookups failed:", err);
-            selectedTitle.value = null;
-          });
-      });
-    
-  } else {
-    console.log('Invalid ISBN');
-    selectedTitle.value = null;
+            });
+        });
+      
+    } else {
+      console.log('Invalid ISBN');
+      selectedTitle.value = null;
+    }
   }
 });
 
@@ -297,17 +292,10 @@ const selectedTitle = ref();
 const selectedSubject = ref();
 
 watch(selectedTitle, (newTitle) => {
-  if(newTitle == null){
-    isISBNDisabled.value = false;
-    return
-  } else if(isTitleDisabled.value == false) {
-    isISBNDisabled.value = true;
-    selectedISBN.value = null;
-  } else {
-    return
-  }
+
+  if(!newTitle) return;
   
-  if(titleToIsbn[newTitle.name]) {
+  if(titleToIsbn[newTitle.name] && selectedISBN.value == null) {
     const isbn: string = titleToIsbn[newTitle.name];
     selectedISBN.value = {
       name: isbn,
@@ -315,7 +303,7 @@ watch(selectedTitle, (newTitle) => {
     };
   }
 
-  if(titleToSubject[newTitle.name]) {
+  if(titleToSubject[newTitle.name] && selectedSubject.value == null) {
     const subject: string = titleToSubject[newTitle.name];
     selectedSubject.value = {
       name: subject,
@@ -323,7 +311,7 @@ watch(selectedTitle, (newTitle) => {
     }
   }
 
-  if (titleToGrade[newTitle.name]) {
+  if (titleToGrade[newTitle.name] && selectedTitle.value == null) {
     const grade: string = titleToGrade[newTitle.name].toLowerCase();
 
     console.log(grade)
@@ -685,70 +673,7 @@ async function nextSlide() {
     window.alert("Please fill in all required fields.")
   }
 }
-function useTeleportDropdown(el: HTMLElement) {
-  let dropdown: HTMLElement | null = null
-  const observer = new MutationObserver(() => {
-    const found = el.querySelector(".multiselect__content-wrapper") as HTMLElement
-    if (found && found !== dropdown) {
-      dropdown = found
-      document.body.appendChild(dropdown)
-      positionDropdown()
-    }
-  })
 
-  const positionDropdown = () => {
-    if (!dropdown) return
-    const rect = el.getBoundingClientRect()
-    dropdown.style.position = "absolute"
-    dropdown.style.top = rect.bottom + "px"
-    dropdown.style.left = rect.left + "px"
-    dropdown.style.width = rect.width + "px"
-    dropdown.style.zIndex = "9999"
-  }
-
-  const cleanup = () => {
-    observer.disconnect()
-    if (dropdown) dropdown.remove()
-  }
-
-  observer.observe(el, { childList: true, subtree: true })
-  window.addEventListener("resize", positionDropdown)
-  window.addEventListener("scroll", positionDropdown, true)
-
-  return cleanup
-}
-onMounted(() => {
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      mutation.addedNodes.forEach((node) => {
-        if (node instanceof HTMLElement && node.classList.contains("multiselect")) {
-          console.log("NEW MULTISELECT: ", node)
-          const cleanup = useTeleportDropdown(node)
-          onBeforeUnmount(cleanup)
-        }
-        if (node instanceof HTMLElement) {
-          node.querySelectorAll(".multiselect").forEach(el => {
-            console.log("NEW MULTISELECT (child): ", el)
-            const cleanup = useTeleportDropdown(el as HTMLElement)
-            onBeforeUnmount(cleanup)
-          })
-        }
-      })
-    })
-  })
-
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  })
-
-  document.querySelectorAll(".multiselect").forEach(el => {
-    const cleanup = useTeleportDropdown(el as HTMLElement)
-    onBeforeUnmount(cleanup)
-  })
-
-  onBeforeUnmount(() => observer.disconnect())
-})
 onMounted(async () => {
   watch(
     [buyerName, buyerDeliveryPreference, buyerContactPreference, buyerQuantity, selectedISBN, selectedGrade, selectedTitle, selectedTags],
@@ -847,8 +772,8 @@ function closeModal() {
           </div>
           <div class="requester-data">
             <p><b>Requester Name:</b> {{ selectedNotif?.[1]?.buyerName }}</p>
-            <p><b>Requester Contact Preference:</b> {{ selectedNotif?.[1].buyerContactPreference.map(x => x.name).join(', ') }}</p>
-            <p><b>Requester Delivery Preference:</b> {{ selectedNotif?.[1].buyerDeliveryPreference.map(x => x.name).join(', ') }}</p>
+            <p><b>Requester Contact Preference:</b> {{ selectedNotif?.[1].buyerContactPreference.map((x: { name: any; }) => x.name).join(', ') }}</p>
+            <p><b>Requester Delivery Preference:</b> {{ selectedNotif?.[1].buyerDeliveryPreference.map((x: { name: any; }) => x.name).join(', ') }}</p>
             <p><b>Quantity Requested:</b> {{ selectedNotif?.[1].buyerQuantity }}</p>
           </div>
           <div class="button-container">
@@ -1362,6 +1287,8 @@ function closeModal() {
       color: white;
       box-shadow: 0 0 10px 2px transparentize($color-primary, 0.25);
       .slide-number {
+          width: 100%;
+          height: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
